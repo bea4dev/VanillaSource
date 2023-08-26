@@ -1,0 +1,36 @@
+<configuration debug="false">
+
+    <property file="src/main/resources/logback.properties"/>
+    <timestamp key="timestamp" datePattern="yyyy-MM-dd-HH-mm-ss"/>
+
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+    <appender name="SERVER-STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${log.format}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOG-FILE" class="ch.qos.logback.core.FileAppender">
+        <append>false</append>
+        <file>${log.directory}/latest.log</file>
+        <encoder>
+            <pattern>${log.format}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOG-ARCHIVE" class="ch.qos.logback.core.FileAppender">
+        <append>false</append>
+        <file>${log.directory}/${timestamp}.log</file>
+        <encoder>
+            <pattern>${log.format}</pattern>
+        </encoder>
+    </appender>
+
+
+    <root level="info">
+        <appender-ref ref="SERVER-STDOUT"/>
+        <appender-ref ref="LOG-FILE"/>
+        <appender-ref ref="LOG-ARCHIVE"/>
+    </root>
+
+</configuration>
