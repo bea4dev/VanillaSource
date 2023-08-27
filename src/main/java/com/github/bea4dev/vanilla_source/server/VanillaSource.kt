@@ -5,6 +5,7 @@ import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.minestom.server.MinecraftServer
+import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.instance.Instance
@@ -33,6 +34,7 @@ class VanillaSource(val serverConfig: ServerConfig) {
         GeneratorRegistry.init()
     }
 
+    @Suppress("DEPRECATION")
     fun start() {
         task {
             logger.info("Starting...")
@@ -61,7 +63,18 @@ class VanillaSource(val serverConfig: ServerConfig) {
                 val player: Player = event.player
                 event.setSpawningInstance(defaultLevel!!)
                 player.respawnPoint = defaultLevelConfig.spawnPosition.toPos()
+                // Set default game mode
+                val defaultGameMode = serverConfig.level.default.gameMode
+                if (defaultGameMode != null) {
+                    val gameMode = GameMode.valueOf(defaultGameMode)
+                    player.gameMode = gameMode
+                }
             }
+
+            // Apply server settings
+            MinecraftServer.setChunkViewDistance(serverConfig.settings.chunkViewDistance)
+            MinecraftServer.setEntityViewDistance(serverConfig.settings.entityViewDistance)
+            MinecraftServer.setTerminalEnabled(true)
 
             // Register shutdown task
             MinecraftServer.getSchedulerManager().buildShutdownTask {

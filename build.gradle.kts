@@ -14,6 +14,7 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
     maven("https://jitpack.io")
+    maven("https://repo.unnamed.team/repository/unnamed-public/")
 }
 
 dependencies {
@@ -34,6 +35,9 @@ dependencies {
 
     // Toml
     implementation("cc.ekblad:4koma:1.2.0")
+
+    // Entity model
+    implementation("com.github.bea4dev:hephaestus-engine:4dc6c24b2f")
 }
 
 tasks.test {
@@ -49,6 +53,10 @@ application {
 }
 
 tasks.jar {
+    from("src/main/resources") {
+        include("**/*.*")
+    }
+
     manifest {
         attributes["Main-Class"] = "com.github.bea4dev.vanilla_source.MainKt"
     }

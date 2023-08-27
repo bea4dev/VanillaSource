@@ -6,9 +6,7 @@ import com.github.michaelbull.result.Result
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.net.URLConnection
 
 
 class Resources {
@@ -17,14 +15,20 @@ class Resources {
 
         @JvmStatic
         fun saveResource(path: String, replace: Boolean): Result<Unit, Throwable> {
-            val outPutPath = Path.of(path).fileName.toString()
-            if (!replace && File(path).exists()) {
+            val outputFile = File(path)
+            if (!replace && outputFile.exists()) {
                 return Ok(Unit)
             }
 
+            val loader = ClassLoader.getSystemClassLoader()
+            val url = loader.getResource(path) ?: return Err(NoSuchFileException(File(path)))
+            val connection: URLConnection = url.openConnection()
+            connection.useCaches = false
+            val inputStream = connection.getInputStream()
+
             return try {
-                BufferedOutputStream(FileOutputStream(outPutPath)).use { output ->
-                    Files.newInputStream(Paths.get(path)).use { input ->
+                BufferedOutputStream(FileOutputStream(outputFile)).use { output ->
+                    inputStream.use { input ->
                         input.transferTo(output)
                     }
                 }
