@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -21,23 +22,26 @@ dependencies {
     testImplementation(kotlin("test"))
 
     // Minestom
-    implementation("dev.hollowcube:minestom-ce:5ba3d92d83")
+    implementation("com.github.bea4dev:minestom-ce:6f7bbdee57")
 
-    // Logback
-    implementation("ch.qos.logback:logback-core:1.4.11")
-    implementation("ch.qos.logback:logback-classic:1.4.11")
+    // Log
+    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
+    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
 
     // Kotlin-result
     implementation("com.michael-bull.kotlin-result:kotlin-result:1.1.18")
-
-    // Log for stdout
-    implementation("uk.org.lidalia:sysout-over-slf4j:1.0.2")
 
     // Toml
     implementation("cc.ekblad:4koma:1.2.0")
 
     // Entity model
     implementation("com.github.bea4dev:hephaestus-engine:4dc6c24b2f")
+
+    // Console
+    implementation("org.jline:jline-terminal-jansi:3.21.0")
+    implementation("net.minecrell:terminalconsoleappender:1.3.0")
+    implementation("org.jline:jline-terminal:3.9.0")
+    implementation("org.jline:jline-reader:3.9.0")
 }
 
 tasks.test {
@@ -52,7 +56,15 @@ application {
     mainClass.set("com.github.bea4dev.vanilla_source.MainKt")
 }
 
+tasks.shadowJar {
+    transform(Log4j2PluginsCacheFileTransformer())
+}
+
 tasks.jar {
+    manifest {
+        attributes("Multi-Release" to true)
+    }
+
     from("src/main/resources") {
         include("**/*.*")
     }

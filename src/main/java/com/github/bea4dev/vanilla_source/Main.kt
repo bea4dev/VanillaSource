@@ -6,10 +6,14 @@ import com.github.bea4dev.vanilla_source.server.VanillaSource
 import com.github.bea4dev.vanilla_source.util.unwrap
 import java.io.File
 
-fun main(args: Array<String>) {
+fun main() {
     Resources.saveResource("server.toml", false)
     val serverConfig = TomlConfig.loadOrDefault<ServerConfig>(File("server.toml")).unwrap()
 
-    VanillaSource(serverConfig).start()
+    println("Initializing console...")
+    val console = Console()
+    console.start()
+
+    VanillaSource(serverConfig, console).start()
 }
 

@@ -1,6 +1,9 @@
 package com.github.bea4dev.vanilla_source.server
 
+import com.github.bea4dev.vanilla_source.Console
+import com.github.bea4dev.vanilla_source.commands.Commands
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
+import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.util.unwrap
@@ -10,19 +13,22 @@ import net.minestom.server.entity.Player
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.instance.Instance
 import org.slf4j.LoggerFactory
-import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J
+import java.util.concurrent.atomic.AtomicBoolean
 
 
-class VanillaSource(val serverConfig: ServerConfig) {
+class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
 
     private val minecraftServer: MinecraftServer = MinecraftServer.init()
     val logger = LoggerFactory.getLogger("VanillaSource")!!
     private var defaultLevel: Instance? = null
+    private val isRunning = AtomicBoolean(false)
 
     companion object {
         private var server: VanillaSource? = null
 
-        fun getServer(): VanillaSource { return server!! }
+        fun getServer(): VanillaSource {
+            return server!!
+        }
     }
 
     init {
@@ -36,11 +42,14 @@ class VanillaSource(val serverConfig: ServerConfig) {
 
     @Suppress("DEPRECATION")
     fun start() {
+        isRunning.set(true)
+
         task {
             logger.info("Starting...")
 
             // Log setting
-            SysOutOverSLF4J.sendSystemOutAndErrToSLF4J()
+            System.setOut(STDOutLogger(System.out))
+            System.setErr(STDOutLogger(System.err))
 
             registerTask()
 
@@ -74,12 +83,14 @@ class VanillaSource(val serverConfig: ServerConfig) {
             // Apply server settings
             MinecraftServer.setChunkViewDistance(serverConfig.settings.chunkViewDistance)
             MinecraftServer.setEntityViewDistance(serverConfig.settings.entityViewDistance)
-            MinecraftServer.setTerminalEnabled(true)
 
             // Register shutdown task
             MinecraftServer.getSchedulerManager().buildShutdownTask {
-                logger.info("Good night...")
+                logger.info("Good night.")
             }
+
+            // Register commands
+            Commands.register()
 
             // Runs the garbage collection before starting.
             System.gc()
@@ -101,17 +112,24 @@ class VanillaSource(val serverConfig: ServerConfig) {
     }
 
     fun stop() {
-        MinecraftServer.stopCleanly()
+        if (isRunning.getAndSet(false)) {
+            MinecraftServer.stopCleanly()
+            console?.stop()
+        }
     }
 
     fun stopWithFatalError(error: Throwable) {
-        logger.warn("!!! SERVER IS STOPPED WITH FATAL ERROR !!!")
-        error.printStackTrace()
-        MinecraftServer.stopCleanly()
+        if (isRunning.getAndSet(false)) {
+            logger.warn("!!! SERVER IS STOPPED WITH FATAL ERROR !!!")
+            error.printStackTrace()
+            MinecraftServer.stopCleanly()
+            console?.stop()
+        }
     }
 
 
-
-    fun getDefaultLevel(): Instance { return this.defaultLevel!! }
+    fun getDefaultLevel(): Instance {
+        return this.defaultLevel!!
+    }
 
 }

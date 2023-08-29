@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="off">
+
+    <Properties>
+        <Property name="format">%d{HH:mm:ss} [%t:%p]: [%c{1}] %m%n</Property>
+        <Property name="logfile">./logs/latest.log</Property>
+        <Property name="logfile-archive">./logs/%d{yyyy-MM-dd}-%i.log.gz</Property>
+    </Properties>
+
+    <Appenders>
+        <TerminalConsole name="TerminalConsole">
+            <PatternLayout>
+                <pattern>${format}</pattern>
+            </PatternLayout>
+        </TerminalConsole>
+
+        <RollingFile name="Archive" append="true" fileName="${logfile}" filePattern="${logfile-archive}">
+            <PatternLayout>
+                <pattern>${format}</pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <OnStartupTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="1000"/>
+        </RollingFile>
+
+        <Async name="Async">
+            <AppenderRef ref="rewrite"/>
+        </Async>
+        <Rewrite name="rewrite">
+            <AppenderRef ref="rewrite2"/>
+        </Rewrite>
+        <Rewrite name="rewrite2">
+            <AppenderRef ref="TerminalConsole" level="info"/>
+            <AppenderRef ref="Archive"/>
+        </Rewrite>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Async"/>
+        </Root>
+    </Loggers>
+</Configuration>
