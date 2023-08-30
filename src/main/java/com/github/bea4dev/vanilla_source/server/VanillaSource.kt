@@ -1,9 +1,13 @@
 package com.github.bea4dev.vanilla_source.server
 
 import com.github.bea4dev.vanilla_source.Console
+import com.github.bea4dev.vanilla_source.Resources
 import com.github.bea4dev.vanilla_source.commands.Commands
+import com.github.bea4dev.vanilla_source.config.TomlConfig
+import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
+import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.util.unwrap
@@ -13,6 +17,7 @@ import net.minestom.server.entity.Player
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.instance.Instance
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -38,6 +43,13 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
     private fun registerTask() {
         GeneratorRegistry.init()
+
+        // Entity models
+        if (serverConfig.settings.enableModelEngine) {
+            Resources.saveResource("entity_model.toml", false)
+            val entityModelConfig = TomlConfig.loadOrDefault<EntityModelConfig>(File("entity_model.toml")).unwrap()
+            EntityModelResource.createGlobalResource(entityModelConfig)
+        }
     }
 
     @Suppress("DEPRECATION")

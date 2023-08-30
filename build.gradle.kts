@@ -35,7 +35,7 @@ dependencies {
     implementation("cc.ekblad:4koma:1.2.0")
 
     // Entity model
-    implementation("com.github.bea4dev:hephaestus-engine:4dc6c24b2f")
+    implementation("com.github.bea4dev:hephaestus-engine:466fe31b50")
 
     // Console
     implementation("org.jline:jline-terminal-jansi:3.21.0")

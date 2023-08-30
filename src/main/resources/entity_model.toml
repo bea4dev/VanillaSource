@@ -1,0 +1,4 @@
+[settings]
+template_path = "pack/resource-pack-template"
+bbmodels_path = "pack/bbmodels"
+output_name = "pack/resource-pack"

@@ -9,6 +9,7 @@ class Commands {
         fun register() {
             val commandManager = MinecraftServer.getCommandManager()
             commandManager.register(StopCommand())
+            commandManager.register(ModelCommand())
         }
     }
 }
