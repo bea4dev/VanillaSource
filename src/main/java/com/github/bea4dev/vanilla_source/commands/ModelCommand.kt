@@ -1,6 +1,9 @@
 package com.github.bea4dev.vanilla_source.commands
 
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
+import com.github.bea4dev.vanilla_source.server.coroutine.launch
+import com.github.bea4dev.vanilla_source.server.coroutine.sync
+import kotlinx.coroutines.delay
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.MinecraftServer
@@ -9,6 +12,7 @@ import net.minestom.server.command.builder.arguments.ArgumentType
 import net.minestom.server.command.builder.suggestion.SuggestionEntry
 import net.minestom.server.entity.Player
 import net.minestom.server.timer.TaskSchedule
+import team.unnamed.hephaestus.animation.Animation
 import java.util.function.Function
 
 class ModelCommand : Command("model") {
@@ -57,12 +61,20 @@ class ModelCommand : Command("model") {
                 return@addSyntax
             }
 
-            val view = resource.createModelEntityTracked(modelName, sender.instance, sender.position)
+            val entity = resource.createModelEntityTracked(modelName, sender.instance, sender.position)
             if (animationName != "") {
-                view.playAnimation(animationName)
+                val animation = model.animations()[animationName] ?: return@addSyntax
+
+                when (animation.loopMode()) {
+                    Animation.LoopMode.LOOP -> entity.playAnimation(animationName)
+                    else -> {
+                        MinecraftServer.getSchedulerManager().scheduleTask({ entity.playAnimation(animationName) },
+                            TaskSchedule.tick(1), TaskSchedule.tick(100))
+                    }
+                }
             }
 
-            MinecraftServer.getSchedulerManager().scheduleTask({ view.kill() }, TaskSchedule.tick(1200), TaskSchedule.stop())
+            MinecraftServer.getSchedulerManager().scheduleTask({ entity.kill() }, TaskSchedule.tick(1200), TaskSchedule.stop())
 
             sender.sendMessage(Component.text("Spawn!").color(NamedTextColor.GREEN))
         }, modelNameArg, animationNameArg)

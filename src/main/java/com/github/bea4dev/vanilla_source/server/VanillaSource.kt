@@ -34,6 +34,10 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         fun getServer(): VanillaSource {
             return server!!
         }
+
+        fun getMinecraftServer(): MinecraftServer {
+            return server!!.minecraftServer
+        }
     }
 
     init {

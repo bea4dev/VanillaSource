@@ -42,6 +42,11 @@ dependencies {
     implementation("net.minecrell:terminalconsoleappender:1.3.0")
     implementation("org.jline:jline-terminal:3.9.0")
     implementation("org.jline:jline-reader:3.9.0")
+
+    // Coroutine
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("com.github.shynixn.mccoroutine:mccoroutine-minestom-api:2.13.0")
+    implementation("com.github.shynixn.mccoroutine:mccoroutine-minestom-core:2.13.0")
 }
 
 tasks.test {
