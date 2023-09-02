@@ -36,13 +36,13 @@ fun bezier(entries: List<AnimationEntry>): MutableList<AnimationEntry> {
         val yNextNext = Vec2D(nextOfNext.pos.toDouble(), nextOfNext.value.y().toDouble())
         val zNextNext = Vec2D(nextOfNext.pos.toDouble(), nextOfNext.value.z().toDouble())
 
-        val xStartControl = xStart.add(xEnd.subtract(xPrev).normalize().multiply(2.0))
-        val yStartControl = yStart.add(yEnd.subtract(yPrev).normalize().multiply(2.0))
-        val zStartControl = zStart.add(zEnd.subtract(zPrev).normalize().multiply(2.0))
+        val xStartControl = xStart.add(xEnd.subtract(xPrev).normalize().multiply(3.0))
+        val yStartControl = yStart.add(yEnd.subtract(yPrev).normalize().multiply(3.0))
+        val zStartControl = zStart.add(zEnd.subtract(zPrev).normalize().multiply(3.0))
 
-        val xEndControl = xEnd.add(xStart.subtract(xNextNext).normalize().multiply(2.0))
-        val yEndControl = yEnd.add(yStart.subtract(yNextNext).normalize().multiply(2.0))
-        val zEndControl = zEnd.add(zStart.subtract(zNextNext).normalize().multiply(2.0))
+        val xEndControl = xEnd.add(xStart.subtract(xNextNext).normalize().multiply(3.0))
+        val yEndControl = yEnd.add(yStart.subtract(yNextNext).normalize().multiply(3.0))
+        val zEndControl = zEnd.add(zStart.subtract(zNextNext).normalize().multiply(3.0))
 
         val xCurve = BezierCurve2D(xStart, xStartControl, xEndControl, xEnd)
         val yCurve = BezierCurve2D(yStart, yStartControl, yEndControl, yEnd)
