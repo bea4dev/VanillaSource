@@ -19,3 +19,6 @@ fun <T> Entity.sync(block: suspend CoroutineScope.() -> T): Deferred<T> {
 fun launch(block: suspend CoroutineScope.() -> Unit): Job {
     return VanillaSource.getMinecraftServer().launch(block = block)
 }
+
+val Int.tick: Long
+    get() = this * 50L

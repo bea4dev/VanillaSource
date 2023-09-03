@@ -8,12 +8,16 @@ import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
+import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
+import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
+import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.minestom.server.MinecraftServer
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
+import net.minestom.server.event.entity.EntityAttackEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.instance.Instance
 import org.slf4j.LoggerFactory
@@ -53,6 +57,30 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             Resources.saveResource("entity_model.toml", false)
             val entityModelConfig = TomlConfig.loadOrDefault<EntityModelConfig>(File("entity_model.toml")).unwrap()
             EntityModelResource.createGlobalResource(entityModelConfig)
+        }
+
+        // Freeze item registry
+        ItemRegistry.freezeRegistry()
+
+        // Register events
+        MinecraftServer.getGlobalEventHandler().addListener(EntityAttackEvent::class.java) { event ->
+            val target = event.target
+            val source = event.entity
+
+            if (source is Player) {
+                val itemStack = source.itemInMainHand
+                val id = itemStack.meta().getTag(VanillaSourceItem.idTag) ?: return@addListener
+
+                val item = ItemRegistry.INSTANCE[id]
+                if (item == null) {
+                    logger.warn("Unknown item id '${id}'!")
+                    return@addListener
+                }
+                if (target is EnemyModelEntity) {
+                    target.onAttacked(source, item)
+                }
+                item.onAttack(source, target, itemStack)
+            }
         }
     }
 
