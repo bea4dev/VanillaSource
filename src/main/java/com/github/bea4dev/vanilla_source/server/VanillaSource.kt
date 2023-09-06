@@ -13,14 +13,17 @@ import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
+import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.minestom.server.MinecraftServer
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
 import net.minestom.server.event.entity.EntityAttackEvent
 import net.minestom.server.event.player.PlayerLoginEvent
+import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
 import org.slf4j.LoggerFactory
+import team.unnamed.hephaestus.minestom.MinestomModelEngine
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -60,6 +63,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         }
 
         // Freeze item registry
+        ItemRegistry.init()
         ItemRegistry.freezeRegistry()
 
         // Register events
@@ -81,6 +85,17 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
                 }
                 item.onAttack(source, target, itemStack)
             }
+        }
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
+            val player = event.player
+            val zombie = TestZombie()
+            zombie.isAutoViewable = true
+            zombie.setInstance(player.instance, player.position)
+        }
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
+            event.player.permissionLevel = 2
+            val item = ItemRegistry.INSTANCE["pipe"]!!
+            event.player.inventory.addItemStack(item.createItemStack().withMeta { builder -> builder.customModelData(1) })
         }
     }
 

@@ -10,6 +10,7 @@ class Commands {
             val commandManager = MinecraftServer.getCommandManager()
             commandManager.register(StopCommand())
             commandManager.register(ModelCommand())
+            commandManager.register(GamemodeCommand())
         }
     }
 }
