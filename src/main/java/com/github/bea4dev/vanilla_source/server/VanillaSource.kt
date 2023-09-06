@@ -16,6 +16,7 @@ import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistr
 import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.minestom.server.MinecraftServer
+import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
 import net.minestom.server.event.entity.EntityAttackEvent
@@ -90,6 +91,8 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             val player = event.player
             val zombie = TestZombie()
             zombie.isAutoViewable = true
+            zombie.setNoGravity(false)
+            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.2F
             zombie.setInstance(player.instance, player.position)
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->

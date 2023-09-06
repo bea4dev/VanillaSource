@@ -73,7 +73,11 @@ open class EnemyModelEntity(entityType: EntityType, model: Model, boneType: Bone
             if (target is Player) {
                 target.sendMessage("attack!")
             }
-            tryAction(attackActions.attackAction)
+            this.launch {
+                if (attackingStatus == IDLE || attackingStatus == GUARD) {
+                    attackActions.attackAction(this)
+                }
+            }
         }
     }
 
