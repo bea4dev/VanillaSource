@@ -64,6 +64,7 @@ class Level {
                 ?: return Err(IllegalArgumentException("[${levelConfig.name}] DimensionType '${dimensionTypeName}' is not found!"))
 
             val level = instanceManager.createInstanceContainer(dimension)
+            level.timeRate = 0
 
             val pathStr = levelConfig.path
             if (pathStr == null) {

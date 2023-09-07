@@ -24,12 +24,14 @@ import net.minestom.server.entity.ai.target.LastEntityDamagerTarget
 import net.minestom.server.entity.damage.DamageType
 import net.minestom.server.utils.time.TimeUnit
 import team.unnamed.hephaestus.Model
+import team.unnamed.hephaestus.minestom.GenericBoneEntity
 import team.unnamed.hephaestus.minestom.MinestomModelEngine.BoneType
 import team.unnamed.hephaestus.minestom.ModelEntity
+import java.util.function.Supplier
 import kotlin.random.Random
 
-open class EnemyModelEntity(entityType: EntityType, model: Model, boneType: BoneType)
-    : ModelEntity(entityType, model, boneType), VanillaSourceEntity {
+open class EnemyModelEntity(entityType: EntityType, model: Model)
+    : ModelEntity(entityType, model, BoneType.AREA_EFFECT_CLOUD), VanillaSourceEntity {
 
     private var currentJob: Job? = null
     private var currentAction: (suspend CoroutineScope.() -> Unit)? = null
@@ -48,7 +50,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model, boneType: Bone
                 ClosestEntityTarget(this, 32.0) { entity -> entity is Player }
             )
         )
-        super.setInvisible(false)
+        super.setInvisible(true)
     }
 
     fun tryAction(action: suspend CoroutineScope.() -> Unit): (suspend CoroutineScope.() -> Unit)? {

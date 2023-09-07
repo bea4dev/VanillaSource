@@ -10,7 +10,7 @@ import java.io.File
 
 fun main() {
     // Console
-    println("Initializing console...")
+    println("Initializing a console...")
     val console = Console()
     console.start()
 

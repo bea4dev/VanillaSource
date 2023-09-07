@@ -17,12 +17,24 @@ import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.minestom.server.MinecraftServer
 import net.minestom.server.attribute.Attribute
-import net.minestom.server.entity.GameMode
-import net.minestom.server.entity.Player
+import net.minestom.server.entity.*
+import net.minestom.server.entity.ai.goal.MeleeAttackGoal
+import net.minestom.server.entity.ai.goal.RandomStrollGoal
+import net.minestom.server.entity.ai.target.ClosestEntityTarget
+import net.minestom.server.entity.ai.target.LastEntityDamagerTarget
+import net.minestom.server.entity.metadata.display.ItemDisplayMeta
 import net.minestom.server.event.entity.EntityAttackEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
+import net.minestom.server.item.ItemStack
+import net.minestom.server.item.Material
+import net.minestom.server.network.packet.server.play.EntityMetaDataPacket
+import net.minestom.server.network.packet.server.play.EntityPositionPacket
+import net.minestom.server.network.packet.server.play.EntityTeleportPacket
+import net.minestom.server.network.packet.server.play.SpawnEntityPacket
+import net.minestom.server.timer.TaskSchedule
+import net.minestom.server.utils.time.TimeUnit
 import org.slf4j.LoggerFactory
 import team.unnamed.hephaestus.minestom.MinestomModelEngine
 import java.io.File
@@ -90,9 +102,8 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
             val zombie = TestZombie()
+            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.125F
             zombie.isAutoViewable = true
-            zombie.setNoGravity(false)
-            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.2F
             zombie.setInstance(player.instance, player.position)
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
