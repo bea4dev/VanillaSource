@@ -3,6 +3,7 @@ package com.github.bea4dev.vanilla_source.server.entity
 import com.github.bea4dev.vanilla_source.server.coroutine.launch
 import com.github.bea4dev.vanilla_source.server.coroutine.tick
 import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity.AttackingStatus.*
+import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
 import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.item.WeaponItem
 import com.github.bea4dev.vanilla_source.util.math.createCube
@@ -10,6 +11,7 @@ import com.github.bea4dev.vanilla_source.util.math.getEntitiesInBox
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import net.minestom.server.attribute.Attribute
 import net.minestom.server.collision.BoundingBox
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.coordinate.Vec
@@ -38,18 +40,10 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     protected open val attackActions: AttackActions? = getDefaultAttackingActions()
     protected var attackingStatus = IDLE
 
+    @Suppress("LeakingThis")
+    val aiController = EntityAIController(this)
+
     init {
-        @Suppress("LeakingThis")
-        super.addAIGroup(
-            listOf(
-                MeleeAttackGoal(this, 1.6, 20, TimeUnit.SERVER_TICK),
-                RandomStrollGoal(this, 20)
-            ),
-            listOf(
-                LastEntityDamagerTarget(this, 32.0F),
-                ClosestEntityTarget(this, 32.0) { entity -> entity is Player }
-            )
-        )
         super.setInvisible(true)
     }
 
@@ -104,6 +98,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     }
 
     override fun tick(time: Long) {
+        this.aiController.tick(super.position, time)
         super.tick(time)
         this.playIdleAnimation()
     }

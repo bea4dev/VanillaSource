@@ -47,6 +47,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("com.github.shynixn.mccoroutine:mccoroutine-minestom-api:2.13.0")
     implementation("com.github.shynixn.mccoroutine:mccoroutine-minestom-core:2.13.0")
+
+    // Script
+    implementation("com.github.bea4dev:Contan:0cb1c15c65")
 }
 
 tasks.test {

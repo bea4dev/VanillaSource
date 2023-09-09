@@ -1,0 +1,171 @@
+package com.github.bea4dev.vanilla_source.server.entity.ai.astar
+
+import com.github.bea4dev.vanilla_source.server.level.util.BlockPosition
+import net.minestom.server.MinecraftServer
+import net.minestom.server.instance.Instance
+import net.minestom.server.timer.ExecutionType
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import kotlin.math.abs
+
+
+class AsyncAStarMachine(
+    val world: Instance,
+    val start: BlockPosition,
+    val goal: BlockPosition,
+    val descendingHeight: Int,
+    val jumpHeight: Int,
+    val maxIteration: Int,
+) {
+
+    //NodeData map
+    private val nodeDataMap: MutableMap<BlockPosition, NodeData> = HashMap<BlockPosition, NodeData>()
+
+    //Sorted node
+    private val sortNodeSet: MutableSet<NodeData> = HashSet()
+
+    fun runPathfindingAsync(): CompletableFuture<MutableList<BlockPosition>> {
+        val completableFuture = CompletableFuture<MutableList<BlockPosition>>()
+
+        //Start pathfinding at async
+        MinecraftServer.getSchedulerManager().scheduleNextProcess({
+            completableFuture.complete(
+                runPathFinding()
+            )
+        }, ExecutionType.ASYNC)
+        return completableFuture
+    }
+
+    fun runPathFinding(): MutableList<BlockPosition> {
+        //Check the start and goal position.
+        if (start == goal) {
+            //I couldn't find a path...
+            return ArrayList<BlockPosition>()
+        }
+
+        //Open first position node
+        val startNode = openNode(null, start)
+        startNode.isClosed = true
+
+        //Current node
+        var currentNode = startNode
+
+        //Nearest node
+        var nearestNode = currentNode
+
+        //Iteration count
+        var iteration = 0
+
+        //Start pathfinding
+        while (true) {
+            iteration++
+
+            //Max iteration check
+            if (iteration >= maxIteration) {
+                //Give up!
+                val paths = ArrayList<BlockPosition>()
+                paths.add(nearestNode.blockPosition)
+                getPaths(nearestNode, paths)
+                paths.reverse()
+
+
+                /*
+                for (position in paths) {
+                    Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(position.asPos(), Block.LIME_STAINED_GLASS)) }
+                }*/
+                return paths
+            }
+
+            //Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(currentNode.blockPosition.asPos(), Block.GLASS)) }
+            for (blockPosition in currentNode.getNeighbourBlockPosition(descendingHeight, jumpHeight, world)) {
+                //Check if closed
+                val newNode = openNode(currentNode, blockPosition)
+                if (newNode.isClosed) continue
+
+                //Update nearest node
+                if (newNode.estimatedCost < nearestNode.estimatedCost) {
+                    nearestNode = newNode
+                }
+
+                //Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(newNode.blockPosition.asPos(), Block.GRAY_STAINED_GLASS)) }
+                sortNodeSet.add(newNode)
+            }
+
+            //Close node
+            currentNode.isClosed = true
+            sortNodeSet.remove(currentNode)
+            //Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(currentNode.blockPosition.asPos(), Block.BLACK_STAINED_GLASS)) }
+            if (sortNodeSet.size == 0) {
+                //I couldn't find a path...
+                val paths = ArrayList<BlockPosition>()
+                paths.add(nearestNode.blockPosition)
+                getPaths(nearestNode, paths)
+                paths.reverse()
+
+                /*
+                for (position in paths) {
+                    Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(position.asPos(), Block.LIME_STAINED_GLASS)) }
+                }*/
+                return paths
+            }
+
+            //Choose next node
+            var score = Int.MAX_VALUE
+            for (nodeData in sortNodeSet) {
+                if (nodeData.score < score) {
+                    score = nodeData.score
+                    currentNode = nodeData
+                } else if (nodeData.score == score) {
+                    if (nodeData.estimatedCost < currentNode.estimatedCost) {
+                        currentNode = nodeData
+                    } else if (nodeData.estimatedCost == currentNode.estimatedCost) {
+                        if (nodeData.actualCost <= currentNode.actualCost) {
+                            currentNode = nodeData
+                        }
+                    }
+                }
+            }
+
+            //Check goal
+            if (currentNode.blockPosition == goal) {
+                val paths = ArrayList<BlockPosition>()
+                paths.add(currentNode.blockPosition)
+                getPaths(currentNode, paths)
+                paths.reverse()
+
+                /*
+                for (position in paths) {
+                    Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(position.asPos(), Block.LIME_STAINED_GLASS)) }
+                }*/
+                return paths
+            }
+        }
+    }
+
+    private fun getPaths(nodeData: NodeData, paths: MutableList<BlockPosition>) {
+        val origin = nodeData.origin ?: return
+        paths.add(origin.blockPosition)
+        getPaths(origin, paths)
+    }
+
+    private fun openNode(origin: NodeData?, blockPosition: BlockPosition): NodeData {
+        val nodeData = nodeDataMap[blockPosition]
+        if (nodeData != null) return nodeData
+
+        //Calculate actual cost
+        val actualCost = if (origin == null) 0 else origin.actualCost + 1
+
+        //Calculate estimated cost
+        val estimatedCost = abs(goal.x - blockPosition.x) + abs(goal.y - blockPosition.y) + abs(goal.z - blockPosition.z)
+        return nodeDataMap.computeIfAbsent(blockPosition) { bp: BlockPosition ->
+            NodeData(
+                bp,
+                origin,
+                actualCost,
+                estimatedCost
+            )
+        }
+    }
+
+}
+

@@ -9,6 +9,7 @@ import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
+import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.level.Level
@@ -102,8 +103,10 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
             val zombie = TestZombie()
-            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.125F
+            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.2F
             zombie.isAutoViewable = true
+            zombie.aiController.goalSelector.goals += EntityTargetGoal(player)
+            zombie.setNoGravity(false)
             zombie.setInstance(player.instance, player.position)
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
