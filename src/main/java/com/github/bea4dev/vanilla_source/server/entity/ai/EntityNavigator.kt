@@ -1,5 +1,6 @@
 package com.github.bea4dev.vanilla_source.server.entity.ai
 
+import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncAStarMachine
 import com.github.bea4dev.vanilla_source.server.entity.isOnGroundStrict
 import com.github.bea4dev.vanilla_source.server.entity.move
@@ -21,7 +22,7 @@ import kotlin.math.sqrt
 
 
 @Suppress("UnstableApiUsage", "unused")
-class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Float, val descendingHeight: Int) {
+class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Double, var smoothJumpHeight: Double, val descendingHeight: Int) {
 
     //Goal
     private var navigationGoal: BlockPosition? = null
@@ -46,9 +47,15 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Floa
     private var jumpGoalHeight = Double.MAX_VALUE
     private var lastVelocity = Vec.ZERO
 
+    var enable = true
+
 
     @Suppress("DuplicatedCode")
     fun tick(pos: Pos) {
+        if (!enable) {
+            return
+        }
+
         if (this.isCreature) {
             this.speed = (this.entity as EntityCreature).getAttribute(Attribute.MOVEMENT_SPEED).baseValue
         }
@@ -152,16 +159,23 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Floa
             velocity = nextPosition.add(-position.x, 0.0, -position.z)
             velocity = velocity.normalize().mul(nextVelocityLength)
 
-            entity.move(velocity)
+            entity.move(velocity, smoothJumpHeight)
         }
     }
 
     private fun move(velocity: Vec, next: BlockPosition) {
-        val pos = entity.position
-        entity.refreshPosition(pos.withDirection(velocity))
-        val result = entity.move(velocity)
-        if (floor(result.newPosition.y).toInt() < next.y && entity.isOnGroundStrict) {
-            this.entity.velocity = velocity.add(0.0, this.jumpHeight.toDouble() * 7.0, 0.0)
+        val pos = entity.position.withDirection(velocity)
+        if (entity is EnemyModelEntity) {
+            entity.setViewDelayed(pos.yaw, pos.pitch)
+        } else {
+            entity.setView(pos.yaw, pos.pitch)
+        }
+
+        val result = entity.move(velocity, smoothJumpHeight)
+        val failedAutoJump = (result.collisionX || result.collisionZ) && result.newVelocity.y <= 0.0
+        if (failedAutoJump && floor(result.newPosition.y).toInt() < next.y && entity.isOnGroundStrict) {
+            // Normal jump
+            this.entity.velocity = velocity.add(0.0, this.jumpHeight * 7.0, 0.0)
             this.isJumping = true
             this.jumpGoalHeight = next.y.toDouble() + Vec.EPSILON
         }

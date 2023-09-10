@@ -12,7 +12,7 @@ class ItemRegistry : FreezableResource() {
         val INSTANCE = ItemRegistry()
 
         fun init() {
-            INSTANCE["pipe"] = WeaponItem("pipe", Material.SHEARS, Component.text("pipe"), listOf(), true, 4.0F)
+            INSTANCE["pipe"] = WeaponItem("pipe", Material.SHEARS, Component.text("pipe"), listOf(), true, 4.0F, 3.0)
         }
 
         fun freezeRegistry() {

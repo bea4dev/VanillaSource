@@ -8,6 +8,7 @@ import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.item.WeaponItem
 import com.github.bea4dev.vanilla_source.util.math.createCube
 import com.github.bea4dev.vanilla_source.util.math.getEntitiesInBox
+import com.github.bea4dev.vanilla_source.util.math.normalizeDegrees
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,7 +31,10 @@ import team.unnamed.hephaestus.minestom.GenericBoneEntity
 import team.unnamed.hephaestus.minestom.MinestomModelEngine.BoneType
 import team.unnamed.hephaestus.minestom.ModelEntity
 import java.util.function.Supplier
+import kotlin.math.abs
 import kotlin.random.Random
+
+private const val tickRotationDelta = 9.0F
 
 open class EnemyModelEntity(entityType: EntityType, model: Model)
     : ModelEntity(entityType, model, BoneType.AREA_EFFECT_CLOUD), VanillaSourceEntity {
@@ -39,6 +43,9 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     private var currentAction: (suspend CoroutineScope.() -> Unit)? = null
     protected open val attackActions: AttackActions? = getDefaultAttackingActions()
     protected var attackingStatus = IDLE
+
+    private var yawGoal = super.position.yaw
+    private var pitchGoal = super.position.pitch
 
     @Suppress("LeakingThis")
     val aiController = EntityAIController(this)
@@ -79,20 +86,18 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
     protected var previousAnimation: String? = null
     override fun playAnimation(name: String?) {
-        previousAnimation = name
-        super.playAnimation(name)
+        if (name != previousAnimation) {
+            super.playAnimation(name)
+            previousAnimation = name
+        }
     }
 
     protected fun playIdleAnimation() {
         if (attackingStatus == IDLE) {
-            if (super.position.asVec() == super.previousPosition.asVec()) {
-                if (previousAnimation != "idle") {
-                    playAnimation("idle")
-                }
+            if (super.position.asVec().distanceSquared(super.previousPosition.asVec()) < Vec.EPSILON) {
+                playAnimation("idle")
             } else {
-                if (previousAnimation != "walk") {
-                    playAnimation("walk")
-                }
+                playAnimation("walk")
             }
         }
     }
@@ -101,6 +106,31 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         this.aiController.tick(super.position, time)
         super.tick(time)
         this.playIdleAnimation()
+
+        // Delayed rotation
+        val currentYaw = super.position.yaw
+        val currentPitch = super.position.pitch
+        val yawDelta = normalizeDegrees(this.yawGoal - currentYaw)
+        val pitchDelta = normalizeDegrees(this.pitchGoal - currentPitch)
+        val yaw = if (abs(yawDelta) <= tickRotationDelta) {
+            this.yawGoal
+        } else {
+            if (yawDelta > 0.0F) {
+                currentYaw + tickRotationDelta
+            } else {
+                currentYaw - tickRotationDelta
+            }
+        }
+        val pitch = if (abs(pitchDelta) <= tickRotationDelta) {
+            this.pitchGoal
+        } else {
+            if (pitchDelta > 0.0F) {
+                currentPitch + tickRotationDelta
+            } else {
+                currentPitch - tickRotationDelta
+            }
+        }
+        super.setView(yaw, pitch)
     }
 
     fun onAttacked(source: Player, item: VanillaSourceItem) {
@@ -215,6 +245,11 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         colorize(255, 0, 0)
         super.scheduleNextTick { colorizeDefault() }
         return super.damage(type, value)
+    }
+
+    fun setViewDelayed(yaw: Float, pitch: Float) {
+        this.yawGoal = yaw
+        this.pitchGoal = pitch
     }
 
     data class AttackActions(

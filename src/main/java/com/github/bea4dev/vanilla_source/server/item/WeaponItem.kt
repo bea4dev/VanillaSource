@@ -12,7 +12,8 @@ class WeaponItem(
     displayName: Component?,
     lore: List<Component>?,
     val isMelee: Boolean,
-    val damage: Float
+    val damage: Float,
+    val reach: Double
 ) : VanillaSourceItem(id, material, displayName, lore) {
 
     override fun createBaseItemStack(): ItemStack {

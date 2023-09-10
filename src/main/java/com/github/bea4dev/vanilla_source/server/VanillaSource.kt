@@ -8,36 +8,20 @@ import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
-import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
-import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetGoal
+import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
-import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
+import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
 import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.minestom.server.MinecraftServer
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
-import net.minestom.server.entity.ai.goal.MeleeAttackGoal
-import net.minestom.server.entity.ai.goal.RandomStrollGoal
-import net.minestom.server.entity.ai.target.ClosestEntityTarget
-import net.minestom.server.entity.ai.target.LastEntityDamagerTarget
-import net.minestom.server.entity.metadata.display.ItemDisplayMeta
-import net.minestom.server.event.entity.EntityAttackEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
-import net.minestom.server.item.ItemStack
-import net.minestom.server.item.Material
-import net.minestom.server.network.packet.server.play.EntityMetaDataPacket
-import net.minestom.server.network.packet.server.play.EntityPositionPacket
-import net.minestom.server.network.packet.server.play.EntityTeleportPacket
-import net.minestom.server.network.packet.server.play.SpawnEntityPacket
-import net.minestom.server.timer.TaskSchedule
-import net.minestom.server.utils.time.TimeUnit
 import org.slf4j.LoggerFactory
-import team.unnamed.hephaestus.minestom.MinestomModelEngine
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -81,31 +65,14 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         ItemRegistry.freezeRegistry()
 
         // Register events
-        MinecraftServer.getGlobalEventHandler().addListener(EntityAttackEvent::class.java) { event ->
-            val target = event.target
-            val source = event.entity
+        registerEntityAttackListener()
 
-            if (source is Player) {
-                val itemStack = source.itemInMainHand
-                val id = itemStack.meta().getTag(VanillaSourceItem.idTag) ?: return@addListener
-
-                val item = ItemRegistry.INSTANCE[id]
-                if (item == null) {
-                    logger.warn("Unknown item id '${id}'!")
-                    return@addListener
-                }
-                if (target is EnemyModelEntity) {
-                    target.onAttacked(source, item)
-                }
-                item.onAttack(source, target, itemStack)
-            }
-        }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
             val zombie = TestZombie()
             zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.2F
             zombie.isAutoViewable = true
-            zombie.aiController.goalSelector.goals += EntityTargetGoal(player)
+            zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.0, 5)
             zombie.setNoGravity(false)
             zombie.setInstance(player.instance, player.position)
         }

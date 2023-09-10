@@ -11,7 +11,7 @@ class EntityAIController(entity: Entity) {
 
     init {
         this.entity = entity
-        navigator = EntityNavigator(entity, 0.2F, 1.5F, 3)
+        navigator = EntityNavigator(entity, 0.2F, 1.5, 0.7, 3)
         goalSelector = GoalSelector(this)
     }
 
