@@ -12,6 +12,8 @@ import com.github.bea4dev.vanilla_source.util.math.normalizeDegrees
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import net.kyori.adventure.text.Component
+import net.minestom.server.adventure.audience.Audiences
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.collision.BoundingBox
 import net.minestom.server.coordinate.Pos
@@ -102,8 +104,12 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         }
     }
 
+    var lastTime = System.currentTimeMillis()
     override fun tick(time: Long) {
-        this.aiController.tick(super.position, time)
+        val currentTime = System.currentTimeMillis()
+        Audiences.players().sendMessage(Component.text("${currentTime - lastTime}[ms]"))
+        lastTime = currentTime
+        this.aiController.tick(super.position)
         super.tick(time)
         this.playIdleAnimation()
 

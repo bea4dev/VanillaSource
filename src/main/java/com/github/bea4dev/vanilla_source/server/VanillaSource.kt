@@ -15,12 +15,18 @@ import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistr
 import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
 import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.MinecraftServer
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
+import net.minestom.server.network.packet.server.play.EntityTeleportPacket
+import net.minestom.server.network.packet.server.play.SpawnEntityPacket
+import net.minestom.server.timer.TaskSchedule
+import net.minestom.server.utils.PacketUtils
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -69,12 +75,32 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
-            val zombie = TestZombie()
+            /*val zombie = TestZombie()
             zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.2F
             zombie.isAutoViewable = true
             zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.0, 5)
             zombie.setNoGravity(false)
+            zombie.setInstance(player.instance, player.position)*/
+
+            val zombie = object : Entity(EntityType.ZOMBIE) {
+                override fun tick(time: Long) {
+                    super.teleport(super.position.add(0.15, 0.0, 0.0))
+                    super.tick(time)
+                }
+            }
+            val display = object : Entity(EntityType.ITEM_DISPLAY) {
+                var lastTime = System.currentTimeMillis()
+                override fun tick(time: Long) {
+                    val currentTime = System.currentTimeMillis()
+                    player.sendMessage("${currentTime - lastTime}[ms]")
+                    lastTime = currentTime
+                    super.teleport(super.position.add(0.15, 0.0, 0.0))
+                    PacketUtils.flush()
+                    super.tick(time)
+                }
+            }
             zombie.setInstance(player.instance, player.position)
+            display.setInstance(player.instance, player.position)
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
             event.player.permissionLevel = 2

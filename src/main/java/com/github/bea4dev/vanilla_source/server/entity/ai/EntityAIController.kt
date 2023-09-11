@@ -8,6 +8,7 @@ class EntityAIController(entity: Entity) {
     val entity: Entity
     val navigator: EntityNavigator
     val goalSelector: GoalSelector
+    private var ticks = 0L
 
     init {
         this.entity = entity
@@ -15,8 +16,9 @@ class EntityAIController(entity: Entity) {
         goalSelector = GoalSelector(this)
     }
 
-    fun tick(position: Pos, time: Long) {
-        goalSelector.tick(time)
+    fun tick(position: Pos) {
+        goalSelector.tick(ticks)
         navigator.tick(position)
+        ticks++
     }
 }

@@ -21,6 +21,10 @@ class BlockPosition(val x: Int, val y: Int, val z: Int) {
         return Objects.hash(x, y, z)
     }
 
+    override fun toString(): String {
+        return "BlockPosition{$x,$y,$z}"
+    }
+
     fun asPos(): Pos {
         return Pos(x.toDouble(), y.toDouble(), z.toDouble())
     }
