@@ -7,12 +7,12 @@ import kotlinx.coroutines.*
 import net.minestom.server.entity.Entity
 
 fun Entity.launch(block: suspend CoroutineScope.() -> Unit): Job {
-    val dispatcher = SchedulerDispatcher(this.scheduler())
+    val dispatcher = SchedulerDispatcher(this)
     return VanillaSource.getMinecraftServer().scope.launch(dispatcher, CoroutineStart.DEFAULT, block)
 }
 
 fun <T> Entity.sync(block: suspend CoroutineScope.() -> T): Deferred<T> {
-    val dispatcher = SchedulerDispatcher(this.scheduler())
+    val dispatcher = SchedulerDispatcher(this)
     return VanillaSource.getMinecraftServer().scope.async(dispatcher, CoroutineStart.DEFAULT, block)
 }
 

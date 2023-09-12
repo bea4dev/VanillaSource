@@ -2,8 +2,11 @@ package com.github.bea4dev.vanilla_source.server.entity
 
 import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.Entity
+import net.minestom.server.thread.TickThread
 
+@Suppress("UnstableApiUsage")
 interface VanillaSourceEntity {
+    fun getTickThread(): TickThread?
 }
 
 fun Entity.getViewPosition(positionRelative: Vec, fromEye: Boolean = true): Vec {

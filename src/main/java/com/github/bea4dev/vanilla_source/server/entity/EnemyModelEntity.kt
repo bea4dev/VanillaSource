@@ -14,7 +14,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import net.kyori.adventure.text.Component
 import net.minestom.server.adventure.audience.Audiences
-import net.minestom.server.attribute.Attribute
 import net.minestom.server.collision.BoundingBox
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.coordinate.Vec
@@ -22,22 +21,17 @@ import net.minestom.server.entity.Entity
 import net.minestom.server.entity.EntityCreature
 import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.Player
-import net.minestom.server.entity.ai.goal.MeleeAttackGoal
-import net.minestom.server.entity.ai.goal.RandomStrollGoal
-import net.minestom.server.entity.ai.target.ClosestEntityTarget
-import net.minestom.server.entity.ai.target.LastEntityDamagerTarget
 import net.minestom.server.entity.damage.DamageType
-import net.minestom.server.utils.time.TimeUnit
+import net.minestom.server.thread.TickThread
 import team.unnamed.hephaestus.Model
-import team.unnamed.hephaestus.minestom.GenericBoneEntity
 import team.unnamed.hephaestus.minestom.MinestomModelEngine.BoneType
 import team.unnamed.hephaestus.minestom.ModelEntity
-import java.util.function.Supplier
 import kotlin.math.abs
 import kotlin.random.Random
 
 private const val tickRotationDelta = 9.0F
 
+@Suppress("UnstableApiUsage")
 open class EnemyModelEntity(entityType: EntityType, model: Model)
     : ModelEntity(entityType, model, BoneType.AREA_EFFECT_CLOUD), VanillaSourceEntity {
 
@@ -45,9 +39,12 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     private var currentAction: (suspend CoroutineScope.() -> Unit)? = null
     protected open val attackActions: AttackActions? = getDefaultAttackingActions()
     protected var attackingStatus = IDLE
+    protected var comboCount = 0
 
     private var yawGoal = super.position.yaw
     private var pitchGoal = super.position.pitch
+
+    private var thread: TickThread? = null
 
     @Suppress("LeakingThis")
     val aiController = EntityAIController(this)
@@ -75,11 +72,10 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         super.attack(target, swingHand)
         val attackActions = attackActions
         if (attackActions != null) {
-            if (target is Player) {
-                target.sendMessage("attack!")
-            }
             this.launch {
                 if (attackingStatus == IDLE || attackingStatus == GUARD) {
+                    comboCount = 0
+                    //Audiences.players().sendMessage(Component.text("attack : $attackingStatus"))
                     attackActions.attackAction(this)
                 }
             }
@@ -89,6 +85,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     protected var previousAnimation: String? = null
     override fun playAnimation(name: String?) {
         if (name != previousAnimation) {
+            Audiences.players().sendMessage(Component.text("play : $name"))
             super.playAnimation(name)
             previousAnimation = name
         }
@@ -96,7 +93,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
     protected fun playIdleAnimation() {
         if (attackingStatus == IDLE) {
-            if (super.position.asVec().distanceSquared(super.previousPosition.asVec()) < Vec.EPSILON) {
+            if (super.position.asVec().distanceSquared(super.previousPosition.asVec()) < 0.01) {
                 playAnimation("idle")
             } else {
                 playAnimation("walk")
@@ -104,11 +101,13 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         }
     }
 
-    var lastTime = System.currentTimeMillis()
     override fun tick(time: Long) {
-        val currentTime = System.currentTimeMillis()
-        Audiences.players().sendMessage(Component.text("${currentTime - lastTime}[ms]"))
-        lastTime = currentTime
+        val thread = Thread.currentThread()
+        if (thread !is TickThread) {
+            throw IllegalStateException("Unsafe tick!")
+        }
+        this.thread = thread
+
         this.aiController.tick(super.position)
         super.tick(time)
         this.playIdleAnimation()
@@ -149,13 +148,22 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
             when (attackingStatus) {
                 ATTACKING -> {
-                    attackActions.guardedAction(this)
+                    if (comboCount == 0) {
+                        attackActions.guardedAction(this)
+                    }
+                }
+                ATTACKING_COMBO -> {
+                    attackingStatus = COMBO_GUARDED
+                    comboCount--
                 }
                 ATTACK_PRELIMINARY -> {
                     damage(DamageType.fromPlayer(source), item.damage)
                 }
                 GUARDED -> {
                     damage(DamageType.fromPlayer(source), item.damage)
+                }
+                COMBO_GUARDED -> {
+
                 }
                 else -> {
                     damage(DamageType.fromPlayer(source), item.damage / 8.0F)
@@ -178,12 +186,13 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                         attackingStatus = ATTACK_PRELIMINARY
                         delay(18.tick)
 
-                        attackingStatus = ATTACKING
-                        delay(2.tick)
-                        attackAsBox(center, box, 6.0F) { entity -> entity is Player }
+                        setAttacking(this, 2.tick) {
+                            attackAsBox(center, box, 6.0F) { entity -> entity is Player }
 
-                        delay(7.tick)
-                        attackingStatus = IDLE
+                            delay(7.tick)
+                            Audiences.players().sendMessage(Component.text("1"))
+                            attackingStatus = IDLE
+                        }
                     }
                     else -> {
                         if (random == 1) {
@@ -194,46 +203,82 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                         attackingStatus = ATTACK_PRELIMINARY
                         delay(18.tick)
 
-                        attackingStatus = ATTACKING
+                        setComboAttacking()
                         delay(2.tick)
                         attackAsBox(center, box, 4.0F) { entity -> entity is Player }
 
                         attackingStatus = ATTACK_PRELIMINARY
                         delay(18.tick)
 
-                        attackingStatus = ATTACKING
-                        delay(2.tick)
-                        attackAsBox(center, box, 4.0F) { entity -> entity is Player }
+                        if (random == 1) {
+                            setAttacking(this, 2.tick) {
+                                attackAsBox(center, box, 4.0F) { entity -> entity is Player }
 
-                        if (random == 2) {
+                                delay(7.tick)
+                                Audiences.players().sendMessage(Component.text("2"))
+                                attackingStatus = IDLE
+                            }
+                        } else {
+                            setComboAttacking()
+                            delay(2.tick)
+                            attackAsBox(center, box, 4.0F) { entity -> entity is Player }
+
                             attackingStatus = ATTACK_PRELIMINARY
                             delay(18.tick)
 
-                            attackingStatus = ATTACKING
-                            delay(2.tick)
-                            attackAsBox(center, box, 6.0F) { entity -> entity is Player }
-                        }
+                            setAttacking(this, 2.tick) {
+                                attackAsBox(center, box, 6.0F) { entity -> entity is Player }
 
-                        delay(7.tick)
-                        attackingStatus = IDLE
+                                delay(7.tick)
+                                Audiences.players().sendMessage(Component.text("2"))
+                                attackingStatus = IDLE
+                            }
+                        }
                     }
                 }
             },
             {
                 playAnimation("guard")
                 attackingStatus = GUARD
+                stopNavigation()
 
                 delay(20.tick)
+                Audiences.players().sendMessage(Component.text("3"))
                 attackingStatus = IDLE
+                startNavigation()
             },
             {
                 playAnimation("guarded-long")
                 attackingStatus = GUARDED
+                stopNavigation()
 
                 delay(60.tick)
                 attackingStatus = IDLE
+                Audiences.players().sendMessage(Component.text("4"))
+                startNavigation()
             }
         )
+    }
+
+    fun stopNavigation() {
+        aiController.navigator.enable = false
+    }
+
+    fun startNavigation() {
+        aiController.navigator.enable = true
+    }
+
+    protected suspend fun setAttacking(scope: CoroutineScope, delay: Long, onSuccess: suspend CoroutineScope.() -> Unit) {
+        attackingStatus = ATTACKING
+        delay(delay)
+        if (attackingStatus == ATTACKING) {
+            onSuccess(scope)
+        }
+    }
+
+    protected fun setComboAttacking() {
+        attackingStatus = ATTACKING_COMBO
+        comboCount++
     }
 
     fun attackAsBox(center: Pos, box: BoundingBox, damage: Float, filter: (Entity) -> Boolean) {
@@ -266,10 +311,16 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
     enum class AttackingStatus {
         ATTACKING,
+        ATTACKING_COMBO,
         ATTACK_PRELIMINARY,
+        COMBO_GUARDED,
         GUARDED,
         GUARD,
         IDLE
+    }
+
+    override fun getTickThread(): TickThread? {
+        return this.thread
     }
 
 }
