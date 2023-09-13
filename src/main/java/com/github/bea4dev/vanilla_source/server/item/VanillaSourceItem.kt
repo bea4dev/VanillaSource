@@ -38,6 +38,6 @@ abstract class VanillaSourceItem(
 
     protected abstract fun createBaseItemStack(): ItemStack
 
-    abstract fun onAttack(player: Player, target: Entity, itemStack: ItemStack)
+    abstract fun onAttack(player: Player, target: Entity?, itemStack: ItemStack)
 
 }

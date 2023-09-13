@@ -1,5 +1,6 @@
 package com.github.bea4dev.vanilla_source.server.entity.ai
 
+import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
 import com.github.bea4dev.vanilla_source.server.entity.ai.goal.GoalSelector
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.entity.Entity
@@ -17,6 +18,9 @@ class EntityAIController(entity: Entity) {
     }
 
     fun tick(position: Pos) {
+        if (entity is EnemyModelEntity && entity.isPlayingDieAnimation) {
+            return
+        }
         goalSelector.tick(ticks)
         navigator.tick(position)
         ticks++

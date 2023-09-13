@@ -36,7 +36,7 @@ fun handlePlayerAttack(player: Player) {
         // Ignore bone entity
         val meta = entity.entityMeta
         entity !is BaseBoneView && !(entity.entityType == EntityType.ARMOR_STAND && meta.isInvisible && meta.isSilent)
-    } ?: return
+    }
 
     if (target is EnemyModelEntity) {
         target.onAttacked(player, item)
