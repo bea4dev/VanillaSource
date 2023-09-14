@@ -10,9 +10,7 @@ interface VanillaSourceEntity {
 }
 
 fun Entity.getViewPosition(positionRelative: Vec, fromEye: Boolean = true): Vec {
-    val position = positionRelative.rotateFromView(this.position)
-    val x = position.x
-    val y = if (fromEye) { position.y } else { position.y + this.eyeHeight }
-    val z = position.z
-    return this.position.asVec().add(x, y, z)
+    val yAdd = if (fromEye) { this.eyeHeight } else { 0.0 }
+    val position = positionRelative.add(0.0, yAdd, 0.0).rotateFromView(this.position)
+    return this.position.asVec().add(position.x, position.y, position.z)
 }

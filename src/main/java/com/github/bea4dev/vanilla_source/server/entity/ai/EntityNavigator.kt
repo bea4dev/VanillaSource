@@ -48,6 +48,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
     private var lastVelocity = Vec.ZERO
 
     var enable = true
+    var ignorePathfinding = false
 
 
     @Suppress("DuplicatedCode")
@@ -138,6 +139,14 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             }
         }
 
+        if (ignorePathfinding) {
+            next = navigationGoal ?: return
+            nextPosition = Vec(next.x + 0.5, 0.0, next.z + 0.5)
+
+            velocity = nextPosition.add(Vec(-locX, 0.0, -locZ))
+            velocityLengthSquared = velocity.lengthSquared()
+        }
+
         if (velocityLengthSquared > speed * speed) {
             velocity = velocity.normalize().mul(speed.toDouble())
             move(velocity, next)
@@ -210,7 +219,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
 
         currentPaths = null
 
-        if (!entity.isOnGround){
+        if (!entity.isOnGround) {
             return
         }
 
@@ -222,30 +231,29 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
 
             //merge
             val currentPaths: MutableList<BlockPosition> = mutableListOf()
-            this.currentPaths = currentPaths
+            var i = 0
+            loop@while (true) {
+                var currentPosition = paths.getOrNull(i) ?: break
+                currentPaths += currentPosition
 
-            var previousPosition: BlockPosition? = null
-            var previousDeltaX = 0
-            var previousDeltaZ = 0
+                val nextPosition = paths.getOrNull(++i) ?: break
+                val deltaX = nextPosition.x - currentPosition.x
+                val deltaZ = nextPosition.z - currentPosition.z
 
-            for (currentPosition in paths) {
-                var currentDeltaX: Int
-                var currentDeltaZ: Int
-                if (previousPosition == null) {
+                var previousPosition = nextPosition
+                while (true) {
+                    currentPosition = paths.getOrNull(i + 1) ?: continue@loop
+                    val currentDeltaX = currentPosition.x - previousPosition.x
+                    val currentDeltaZ = currentPosition.z - previousPosition.z
+                    if (deltaX != currentDeltaX || deltaZ != currentDeltaZ) {
+                        continue@loop
+                    }
                     previousPosition = currentPosition
-                    currentPaths.add(currentPosition)
-                    continue
-                } else {
-                    currentDeltaX = currentPosition.x - previousPosition.x
-                    currentDeltaZ = currentPosition.z - previousPosition.z
-                }
-
-                if (previousDeltaX != currentDeltaX || previousDeltaZ != currentDeltaZ) {
-                    currentPaths.add(currentPosition)
-                    previousDeltaX = currentDeltaX
-                    previousDeltaZ = currentDeltaZ
+                    i++
                 }
             }
+            this.currentPaths = currentPaths
+
             currentPathIndex = 0
             return
         }

@@ -18,10 +18,12 @@ import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.EntityCreature
 import net.minestom.server.entity.EntityType
+import net.minestom.server.entity.LivingEntity
 import net.minestom.server.entity.Player
 import net.minestom.server.entity.damage.DamageType
 import net.minestom.server.entity.damage.EntityDamage
 import net.minestom.server.network.packet.server.SendablePacket
+import net.minestom.server.network.packet.server.play.HitAnimationPacket
 import net.minestom.server.particle.Particle
 import net.minestom.server.particle.ParticleCreator
 import net.minestom.server.sound.SoundEvent
@@ -33,7 +35,7 @@ import team.unnamed.hephaestus.minestom.ModelEntity
 import kotlin.math.abs
 import kotlin.random.Random
 
-private const val tickRotationDelta = 7.0F
+private const val tickRotationDelta = 20.0F
 
 @Suppress("UnstableApiUsage")
 open class EnemyModelEntity(entityType: EntityType, model: Model)
@@ -44,9 +46,9 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     protected open val attackActions: AttackActions? = getDefaultAttackingActions()
     protected var attackingStatus = IDLE
     protected var comboCount = 0
+    protected var cancelAttacking = false
 
-    protected open val attackDamage = 3.0
-    protected open val attackKnockBackStrength = 10.0
+    protected open val attackKnockBackStrength = 13.0
     protected open val damageSound = Sound.sound(SoundEvent.ENTITY_ZOMBIE_HURT, Sound.Source.VOICE, 0.8F, 0.7F)
     protected open val deathSound = Sound.sound(SoundEvent.ENTITY_ZOMBIE_DEATH, Sound.Source.VOICE, 0.8F, 0.7F)
 
@@ -121,7 +123,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         val position = player.position.add(0.0, player.eyeHeight, 0.0).add(player.position.direction().mul(distance / 2.0))
         val packets = mutableListOf<SendablePacket>()
         for (i in 0..<10) {
-            val size = 2.0
+            val size = 2.5
             val x = Random.nextDouble(size) - (size / 2.0)
             val y = Random.nextDouble(size) - (size / 2.0)
             val z = Random.nextDouble(size) - (size / 2.0)
@@ -134,7 +136,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                 x.toFloat(),
                 y.toFloat(),
                 z.toFloat(),
-                2.0F,
+                1.0F,
                 0,
                 null
             )
@@ -165,8 +167,16 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         this.aiController.tick(super.position)
         super.tick(time)
         this.playIdleAnimation()
+        tickRotation()
+    }
 
+    private fun tickRotation() {
         // Delayed rotation
+        val tickRotationDelta = if (attackingStatus == ATTACKING || attackingStatus == ATTACKING_COMBO || attackingStatus == ATTACK_PRELIMINARY) {
+            tickRotationDelta * 0.2F
+        } else {
+            tickRotationDelta
+        }
         val currentYaw = super.position.yaw
         val currentPitch = super.position.pitch
         val yawDelta = normalizeDegrees(this.yawGoal - currentYaw)
@@ -206,6 +216,8 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                     if (comboCount == 0) {
                         attackingStatus = GUARDED
                         this@EnemyModelEntity.launch(block = attackActions.guardedAction)
+                    } else {
+                        cancelAttacking = true
                     }
                 }
                 ATTACKING_COMBO -> {
@@ -228,7 +240,9 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                 DEAD -> {/*None*/}
                 else -> {
                     damage(DamageType.fromPlayer(source), item.damage / 8.0F)
-                    this@EnemyModelEntity.launch(block = attackActions.guardAction)
+                    if (!isPlayingDieAnimation) {
+                        this@EnemyModelEntity.launch(block = attackActions.guardAction)
+                    }
                 }
             }
         }
@@ -237,9 +251,6 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     fun getDefaultAttackingActions(): AttackActions {
         return AttackActions(
             {
-                val center = getViewPosition(Vec(0.0, -0.5, 0.8)).asPosition()
-                val box = createCube(0.8)
-
                 when (val random = Random.nextInt(3)) {
                     0 -> {
                         playAnimation("attack")
@@ -247,7 +258,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                         delay(17.tick)
 
                         setAttacking(3.tick) {
-                            attackAsBox(center, box, 6.0F) { entity -> entity is Player }
+                            attackAsSphere(getViewPosition(Vec(1.0, -0.5, 0.0)).asPosition(), 3.0, 45.0, 6.0F) { entity -> entity is Player }
 
                             delay(7.tick)
                             attackingStatus = IDLE
@@ -264,14 +275,21 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
                         setComboAttacking()
                         delay(3.tick)
-                        attackAsBox(center, box, 4.0F) { entity -> entity is Player }
+                        if (attackingStatus == ATTACKING_COMBO) {
+                            attackAsSphere(
+                                getViewPosition(Vec(1.0, -0.5, 0.0)).asPosition(),
+                                3.0,
+                                45.0,
+                                4.0F
+                            ) { entity -> entity is Player }
+                        }
 
                         attackingStatus = ATTACK_PRELIMINARY
                         delay(16.tick)
 
                         if (random == 1) {
                             setAttacking(3.tick) {
-                                attackAsBox(center, box, 4.0F) { entity -> entity is Player }
+                                attackAsSphere(getViewPosition(Vec(1.0, -0.5, 0.0)).asPosition(), 3.0, 45.0, 6.0F) { entity -> entity is Player }
 
                                 delay(8.tick)
                                 attackingStatus = IDLE
@@ -279,13 +297,20 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                         } else {
                             setComboAttacking()
                             delay(3.tick)
-                            attackAsBox(center, box, 4.0F) { entity -> entity is Player }
+                            if (attackingStatus == ATTACKING_COMBO) {
+                                attackAsSphere(
+                                    getViewPosition(Vec(1.0, -0.5, 0.0)).asPosition(),
+                                    3.0,
+                                    45.0,
+                                    4.0F
+                                ) { entity -> entity is Player }
+                            }
 
                             attackingStatus = ATTACK_PRELIMINARY
                             delay(15.tick)
 
                             setAttacking(3.tick) {
-                                attackAsBox(center, box, 6.0F) { entity -> entity is Player }
+                                attackAsSphere(getViewPosition(Vec(1.0, -0.5, 0.0)).asPosition(), 3.0, 45.0, 6.0F) { entity -> entity is Player }
 
                                 delay(8.tick)
                                 attackingStatus = IDLE
@@ -327,6 +352,8 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
     protected suspend fun setAttacking(delay: Long, onSuccess: suspend CoroutineScope.() -> Unit) = coroutineScope {
         attackingStatus = ATTACKING
+        val velocity = super.position.direction().mul(attackKnockBackStrength * 0.6)
+        super.velocity = super.velocity.add(velocity)
         delay(delay)
         if (attackingStatus == ATTACKING) {
             attackingStatus = ATTACK_PRELIMINARY
@@ -337,16 +364,30 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
     protected fun setComboAttacking() {
         attackingStatus = ATTACKING_COMBO
         comboCount++
+        val velocity = super.position.direction().mul(attackKnockBackStrength * 0.5)
+        super.velocity = super.velocity.add(velocity)
     }
 
-    fun attackAsBox(center: Pos, box: BoundingBox, damage: Float, filter: (Entity) -> Boolean) {
-        val basePosition = center.sub(box.height() / 2)
-        val entities = box.getEntitiesInBox(super.instance, basePosition).filter(filter)
+    fun attackAsSphere(center: Pos, radius: Double, maxAngle: Double, damage: Float, filter: (Entity) -> Boolean) {
+        if (cancelAttacking) {
+            cancelAttacking = false
+            return
+        }
+        val entities = super.instance.getNearbyEntities(center, radius).filter(filter)
         for (entity in entities) {
-            if (entity !is EntityCreature) {
+            if (entity == this || entity !is LivingEntity) {
+                continue
+            }
+            val direction1 = super.position.direction()
+            val direction2 = entity.position.sub(super.position).asVec()
+            if (direction1.angle(direction2) > maxAngle) {
                 continue
             }
             entity.damage(DamageType.fromEntity(this), damage)
+            entity.velocity = direction1.mul(attackKnockBackStrength)
+            if (entity is Player) {
+                entity.sendPacket(HitAnimationPacket(entity.entityId, Pos.ZERO.withDirection(direction1).yaw))
+            }
         }
     }
 
@@ -356,7 +397,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         }
         colorize(255, 0, 0)
         super.scheduler().scheduleTask({ colorizeDefault() }, TaskSchedule.tick(2), TaskSchedule.stop())
-        if (super.getHealth() < value) {
+        if (super.getHealth() <= value) {
             attackingStatus = DEAD
             playAnimation("die")
             val position = super.position
@@ -369,9 +410,9 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                 val direction = super.position.direction()
                 direction.neg()
             }
-            super.velocity = velocity.mul(15.0)
+            super.velocity = velocity.mul(20.0)
 
-            super.scheduler().scheduleTask({ kill() }, TaskSchedule.tick(20), TaskSchedule.stop())
+            super.scheduler().scheduleTask({ kill() }, TaskSchedule.tick(30), TaskSchedule.stop())
             return true
         }
         super.setHealth(super.getHealth() - value)

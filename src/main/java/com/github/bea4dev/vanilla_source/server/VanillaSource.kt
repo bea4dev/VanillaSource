@@ -76,9 +76,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
             val zombie = TestZombie()
-            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.2F
+            zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.16F
             zombie.isAutoViewable = true
-            zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.0, 5)
+            zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.5, 5)
             zombie.setNoGravity(false)
             zombie.setInstance(player.instance, player.position)
         }
