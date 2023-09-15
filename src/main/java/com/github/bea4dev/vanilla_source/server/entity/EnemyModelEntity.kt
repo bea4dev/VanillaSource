@@ -54,6 +54,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
     private var yawGoal = super.position.yaw
     private var pitchGoal = super.position.pitch
+    private var previousPositionStrict = super.position
 
     private var thread: TickThread? = null
 
@@ -110,7 +111,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
 
     protected fun playIdleAnimation() {
         if (attackingStatus == IDLE) {
-            if (super.position.asVec().distanceSquared(super.previousPosition.asVec()) < 0.01) {
+            if (super.position.asVec().distanceSquared(this.previousPositionStrict.asVec()) < Vec.EPSILON) {
                 playAnimation("idle")
             } else {
                 playAnimation("walk")
@@ -168,6 +169,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         super.tick(time)
         this.playIdleAnimation()
         tickRotation()
+        this.previousPositionStrict = super.position
     }
 
     private fun tickRotation() {

@@ -40,7 +40,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
     var pathfindingInterval = 1
     private var tick = Random().nextInt(pathfindingInterval)
     private val highAccuracy = false
-    var isAsyncPathfinding = false
+    private var isAsyncPathfinding = false
     var isAvoidEntityCollision = false
 
     private var isJumping = false
@@ -74,9 +74,10 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
         val locZ = pos.z
 
         tick++
+        val tickSyncTask = this.tickSyncTask
         if (tickSyncTask != null) {
-            tickSyncTask!!.run()
-            tickSyncTask = null
+            tickSyncTask.run()
+            this.tickSyncTask = null
         }
 
         //Update pathfinding
@@ -84,6 +85,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             return
         }
         if (tick % pathfindingInterval == 0) {
+            val pathfindingTask = this.pathfindingTask
             if (pathfindingTask == null) {
                 updatePathfinding(
                     floor(locX).toInt(),
@@ -91,7 +93,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
                     floor(locZ).toInt()
                 )
             } else {
-                if (pathfindingTask!!.isDone) {
+                if (pathfindingTask.isDone) {
                     updatePathfinding(
                         floor(locX).toInt(),
                         floor(locY).toInt(),
@@ -217,8 +219,6 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             }
         }
 
-        currentPaths = null
-
         if (!entity.isOnGround) {
             return
         }
@@ -261,7 +261,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
         //Start AsyncAStarMachine
         val start = BlockPosition(locX, locY, locZ)
         val asyncAStarMachine = AsyncAStarMachine(
-            entity.instance, start, navigationGoal, descendingHeight, jumpHeight.toInt(), 500
+            entity.instance, start, navigationGoal, descendingHeight, jumpHeight.toInt(), 50
         )
         pathfindingTask = asyncAStarMachine.runPathfindingAsync()
 
@@ -274,9 +274,33 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
                 }
                 return@thenAccept
             }
-            paths.reverse()
+
+            //merge
+            val currentPaths: MutableList<BlockPosition> = mutableListOf()
+            var i = 0
+            loop@while (true) {
+                var currentPosition = paths.getOrNull(i) ?: break
+                currentPaths += currentPosition
+
+                val nextPosition = paths.getOrNull(++i) ?: break
+                val deltaX = nextPosition.x - currentPosition.x
+                val deltaZ = nextPosition.z - currentPosition.z
+
+                var previousPosition = nextPosition
+                while (true) {
+                    currentPosition = paths.getOrNull(i + 1) ?: continue@loop
+                    val currentDeltaX = currentPosition.x - previousPosition.x
+                    val currentDeltaZ = currentPosition.z - previousPosition.z
+                    if (deltaX != currentDeltaX || deltaZ != currentDeltaZ) {
+                        continue@loop
+                    }
+                    previousPosition = currentPosition
+                    i++
+                }
+            }
+
             tickSyncTask = Runnable {
-                currentPaths = paths
+                this.currentPaths = currentPaths
                 currentPathIndex = 0
             }
         }
@@ -295,6 +319,13 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
 
     fun getNavigationGoal(): BlockPosition? {
         return navigationGoal
+    }
+
+    fun asAsync() {
+        isAsyncPathfinding = true
+        if (pathfindingInterval == 1) {
+            pathfindingInterval++
+        }
     }
 }
 
