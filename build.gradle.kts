@@ -50,6 +50,9 @@ dependencies {
 
     // Script
     implementation("com.github.bea4dev:Contan:0cb1c15c65")
+
+    // For native libs
+    implementation("org.apache.commons:commons-lang3:3.13.0")
 }
 
 tasks.test {
