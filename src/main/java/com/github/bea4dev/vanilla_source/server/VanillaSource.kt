@@ -7,6 +7,8 @@ import com.github.bea4dev.vanilla_source.config.TomlConfig
 import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
+import com.github.bea4dev.vanilla_source.natives.NativeManager
+import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
@@ -35,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
 
     private val minecraftServer: MinecraftServer = MinecraftServer.init()
+    val nativeManager = NativeManager()
     val logger = LoggerFactory.getLogger("VanillaSource")!!
     private var defaultLevel: Instance? = null
     private val isRunning = AtomicBoolean(false)
@@ -58,6 +61,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
     private fun registerTask() {
         GeneratorRegistry.init()
+
+        // For native libs
+        registerNativeChunkListener()
 
         // Entity models
         if (serverConfig.settings.enableModelEngine) {
@@ -100,6 +106,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             System.setOut(STDOutLogger(System.out))
             System.setErr(STDOutLogger(System.err))
 
+            // Load native libs
+            nativeManager.init()
+
             registerTask()
 
             // Load all levels
@@ -141,7 +150,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             // Register commands
             Commands.register()
 
-            // Runs the garbage collection before starting.
+            // Runs the garbage collector before starting.
             System.gc()
 
             // Start

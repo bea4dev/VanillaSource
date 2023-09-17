@@ -13,16 +13,17 @@ private val logger = LoggerFactory.getLogger("NativeManager")
 
 private const val LIBRARY_VERSION = 0
 
-class NativeManager private constructor() {
+class NativeManager {
     private var enable = false
 
-    init { init() }
-
-    private fun init() {
+    init {
         if (initialized.getAndSet(true)) {
             VanillaSource.getServer().stopWithFatalError(IllegalStateException("Creating multiple NativeManagers is not allowed!"))
         }
+    }
 
+    fun init() {
+        logger.info("Loading native libs...")
         val environment = getEnvironment()
         if (environment == null) {
             logger.warn("Unknown environment : ${System.getProperty("os.name")} ${System.getProperty("os.arch")}")
@@ -38,6 +39,8 @@ class NativeManager private constructor() {
             System.load(fileName)
         } catch (e: Error) {
             e.printStackTrace()
+            logger.warn("Failed to load native library.")
+            return
         }
 
         val version = NativeBridge.getVersion()
@@ -46,9 +49,13 @@ class NativeManager private constructor() {
             return
         }
 
-        NativeBridge.createRegistry()
+        NativeBridge.createGlobalRegistry()
 
         enable = true
+    }
+
+    fun isEnabled(): Boolean {
+        return this.enable
     }
 }
 
@@ -56,7 +63,7 @@ enum class Environment(val fileName: String) {
     WINDOWS_X64("vanilla_source_windows_x64.dll"),
     LINUX_X64("libvanilla_source_linux_x64.lib"),
     MACOS_X64("libvanilla_source_macos_x64.so"),
-    MACOS_AARCH64("libvanilla_source_macos_aarch64.so")
+    MACOS_AARCH64("libvanilla_source_macos_aarch64.dylib")
 }
 
 fun getEnvironment(): Environment? {
