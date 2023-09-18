@@ -43,3 +43,6 @@ bin/
 
 /logs
 /server.toml
+/native-rs/Cargo.lock
+/native-rs/target/
+/native-rs/.idea/

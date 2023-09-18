@@ -28,9 +28,9 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
     private var navigationGoal: BlockPosition? = null
     private var previousNavigationGoal: BlockPosition? = null
     private var goalFuture: JavaContanFuture? = null
-    private var pathfindingTask: CompletableFuture<MutableList<BlockPosition>>? = null
+    private var pathfindingTask: CompletableFuture<List<BlockPosition>>? = null
     private var tickSyncTask: Runnable? = null
-    private var currentPaths: MutableList<BlockPosition>? = null
+    private var currentPaths: List<BlockPosition>? = null
     private var currentPathIndex = 0
 
     private val isCreature = entity is EntityCreature
@@ -225,11 +225,12 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
 
         if (!isAsyncPathfinding) {
             val start = BlockPosition(locX, locY, locZ)
-            val paths: List<BlockPosition> = AsyncAStarMachine(
+            val paths = AsyncAStarMachine(
                 entity.instance, start, navigationGoal, descendingHeight, jumpHeight.toInt(), 50
             ).runPathFinding()
 
             //merge
+            /*
             val currentPaths: MutableList<BlockPosition> = mutableListOf()
             var i = 0
             loop@while (true) {
@@ -251,8 +252,8 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
                     previousPosition = currentPosition
                     i++
                 }
-            }
-            this.currentPaths = currentPaths
+            }*/
+            this.currentPaths = paths
 
             currentPathIndex = 0
             return
@@ -266,7 +267,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
         pathfindingTask = asyncAStarMachine.runPathfindingAsync()
 
         //Then finish pathfinding
-        pathfindingTask!!.thenAccept { paths: MutableList<BlockPosition> ->
+        pathfindingTask!!.thenAccept { paths ->
             if (paths.size == 0) { //Failure
                 tickSyncTask = Runnable {
                     currentPaths = null
@@ -276,6 +277,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             }
 
             //merge
+            /*
             val currentPaths: MutableList<BlockPosition> = mutableListOf()
             var i = 0
             loop@while (true) {
@@ -297,10 +299,10 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
                     previousPosition = currentPosition
                     i++
                 }
-            }
+            }*/
 
             tickSyncTask = Runnable {
-                this.currentPaths = currentPaths
+                this.currentPaths = paths
                 currentPathIndex = 0
             }
         }

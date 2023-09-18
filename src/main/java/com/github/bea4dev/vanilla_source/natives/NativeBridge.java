@@ -8,6 +8,7 @@ public class NativeBridge {
     static native void registerChunk(int levelId, int chunkX, int chunkZ, int[] blocks);
     static native long createThreadLocalRegistry();
     static native void unregisterChunk(long threadLocalRegistryAddress, int levelId, int chunkX, int chunkZ);
-    static native int[] runPathfinding(long threadLocalRegistryAddress, int levelId, int[] args);
+    static native int[] runPathfinding(long threadLocalRegistryAddress, int levelId, int[] args, int[] returnArray);
+    static native void removeThreadLocalRegistry(long threadLocalRegistryAddress);
 
 }

@@ -8,12 +8,15 @@ import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.natives.NativeManager
+import com.github.bea4dev.vanilla_source.natives.NativeThreadLocalRegistryManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
+import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncAStarMachine
 import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
+import com.github.bea4dev.vanilla_source.server.level.util.asBlockPosition
 import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
 import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
@@ -79,14 +82,31 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         // Register events
         registerEntityAttackListener()
 
+        var pathfinder1: AsyncAStarMachine? = null
+        var pathfinder2: AsyncAStarMachine? = null
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
+            val position = player.position
+            if (pathfinder1 == null) {
+                pathfinder1 = AsyncAStarMachine(player.instance, position.asBlockPosition(), position.add(100.0, 0.0, 100.0).asBlockPosition(), 3, 1, 10000)
+                pathfinder2 = AsyncAStarMachine(player.instance, position.asBlockPosition(), position.add(100.0, 0.0, 100.0).asBlockPosition(), 3, 1, 10000)
+                pathfinder2!!.nativeManager = NativeThreadLocalRegistryManager()
+            }
+
+            var start = System.nanoTime()
+            pathfinder1!!.runPathFinding()
+            println("Java ${System.nanoTime() - start}[ns]")
+            start = System.nanoTime()
+            pathfinder2!!.runPathFinding()
+            println("Rust ${System.nanoTime() - start}[ns]")
+
+            /*
             val zombie = TestZombie()
             zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.16F
             zombie.isAutoViewable = true
             zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.5, 5)
             zombie.setNoGravity(false)
-            zombie.setInstance(player.instance, player.position)
+            zombie.setInstance(player.instance, player.position)*/
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
             event.player.permissionLevel = 2

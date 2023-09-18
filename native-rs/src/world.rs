@@ -99,6 +99,9 @@ impl Chunk {
         return if self.is_empty() {
             BlockState::AIR
         } else {
+            if y < self.min_section_y * 16 || y >= self.max_section_y * 16 {
+                return BlockState::AIR
+            }
             let index = (y >> 4) - self.min_section_y;
             let section = &self.sections[index as usize];
             section.get_block(x, y, z)

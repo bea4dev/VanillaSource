@@ -1,22 +1,28 @@
 package com.github.bea4dev.vanilla_source.server.entity.ai.astar
 
+import com.github.bea4dev.vanilla_source.natives.NativeThreadLocalRegistryManager
+import com.github.bea4dev.vanilla_source.natives.getNativeID
 import com.github.bea4dev.vanilla_source.server.level.util.BlockPosition
 import net.minestom.server.MinecraftServer
 import net.minestom.server.instance.Instance
 import net.minestom.server.timer.ExecutionType
+import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 
+private val EMPTY_LIST = ArrayList<BlockPosition>()
 
 class AsyncAStarMachine(
-    val world: Instance,
+    world: Instance,
     val start: BlockPosition,
     val goal: BlockPosition,
     val descendingHeight: Int,
     val jumpHeight: Int,
     val maxIteration: Int,
 ) {
+    private val world = WeakReference(world)
 
     //NodeData map
     private val nodeDataMap: MutableMap<BlockPosition, NodeData> = HashMap<BlockPosition, NodeData>()
@@ -24,8 +30,11 @@ class AsyncAStarMachine(
     //Sorted node
     private val sortNodeSet: MutableSet<NodeData> = HashSet()
 
-    fun runPathfindingAsync(): CompletableFuture<MutableList<BlockPosition>> {
-        val completableFuture = CompletableFuture<MutableList<BlockPosition>>()
+    private val levelId = world.getNativeID()
+    var nativeManager: NativeThreadLocalRegistryManager? = null
+
+    fun runPathfindingAsync(): CompletableFuture<List<BlockPosition>> {
+        val completableFuture = CompletableFuture<List<BlockPosition>>()
 
         //Start pathfinding at async
         MinecraftServer.getSchedulerManager().scheduleNextProcess({
@@ -36,11 +45,18 @@ class AsyncAStarMachine(
         return completableFuture
     }
 
-    fun runPathFinding(): MutableList<BlockPosition> {
+    fun runPathFinding(): List<BlockPosition> {
         //Check the start and goal position.
         if (start == goal) {
             //I couldn't find a path...
-            return ArrayList<BlockPosition>()
+            return EMPTY_LIST
+        }
+
+        val world = this.world.get() ?: return EMPTY_LIST
+
+        val native = this.nativeManager
+        if (native != null) {
+            return native.runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
         }
 
         //Open first position node

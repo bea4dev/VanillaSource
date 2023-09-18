@@ -1,7 +1,9 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
-use bumpalo::Bump;
-use fxhash::{FxHasher, FxHashMap};
+use bumpalo::ManualBumpRef;
+use fxhash::FxHashMap;
+use crate::allocator::ManualAllocatorHolder;
+use crate::pathfinding::{BlockPosition, run_pathfinding};
 use crate::world::{Chunk, ThreadLocalWorld, World};
 
 
@@ -35,7 +37,7 @@ impl GlobalRegistry {
 
 pub struct ThreadLocalRegistry {
     pub worlds: FxHashMap<i32, ThreadLocalWorld>,
-    pub allocator: Box<Bump>
+    pub allocator_holder: ManualAllocatorHolder
 }
 
 impl ThreadLocalRegistry {
@@ -43,7 +45,7 @@ impl ThreadLocalRegistry {
     pub fn new() -> Self {
         return Self {
             worlds: HashMap::default(),
-            allocator: Box::new(Bump::new())
+            allocator_holder: ManualAllocatorHolder::new()
         }
     }
 
@@ -51,8 +53,29 @@ impl ThreadLocalRegistry {
         return self.worlds.entry(id).or_insert_with(|| { ThreadLocalWorld::new(id) });
     }
 
-    pub fn run_pathfinding(&mut self) {
+    pub fn run_pathfinding(
+        &mut self,
+        world_id: i32,
+        start: &BlockPosition,
+        goal: &BlockPosition,
+        descending_height: i32,
+        jump_height: i32,
+        max_iteration: usize
+    ) -> Vec<BlockPosition, ManualBumpRef> {
+        let mut allocator_holder = self.allocator_holder.clone();
+        allocator_holder.allocator.reset();
+        unsafe { &mut *allocator_holder.cached_map }.clear();
 
+        let world = self.get_world(world_id);
+        return run_pathfinding(
+            allocator_holder,
+            world,
+            start,
+            goal,
+            descending_height,
+            jump_height,
+            max_iteration
+        );
     }
 
 }

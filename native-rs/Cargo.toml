@@ -1,0 +1,16 @@
+[package]
+name = "native-rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "native_rs"
+crate-type = ["dylib"]
+
+[dependencies]
+jni = "0.21.1"
+fxhash = "0.2.1"
+allocator-api2 = "0.2.16"
+bumpalo = { git = "https://github.com/bea4dev/bumpalo.git", version = "3", features = ["allocator_api"] }
+valence = { git = "https://github.com/valence-rs/valence" }
+ahash = "0.8.3"
