@@ -1,5 +1,9 @@
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 use std::sync::Arc;
+use ahash::HashMapExt;
+use fxhash::FxHashMap;
 use valence::BlockState;
 use crate::registry::GLOBAL_REGISTRY;
 use crate::utils::{get_chunk_index, get_palette_index};
@@ -31,7 +35,7 @@ impl World {
 
 pub struct ThreadLocalWorld {
     pub id: i32,
-    pub chunks: HashMap<i64, Arc<Chunk>>
+    pub chunks: FxHashMap<i64, Arc<Chunk>>
 }
 
 impl ThreadLocalWorld {
@@ -39,7 +43,7 @@ impl ThreadLocalWorld {
     pub fn new(id: i32) -> Self {
         return Self {
             id,
-            chunks: HashMap::new()
+            chunks: FxHashMap::new()
         }
     }
 
@@ -95,6 +99,7 @@ impl Chunk {
         return self.sections.is_empty()
     }
 
+    #[inline(always)]
     pub fn get_block(&self, x: i32, y: i32, z: i32) -> BlockState {
         return if self.is_empty() {
             BlockState::AIR
@@ -108,6 +113,7 @@ impl Chunk {
         }
     }
 
+    #[inline(always)]
     pub fn set_block(&mut self, x: i32, y: i32, z: i32, block: BlockState) {
         if !self.is_empty() {
             let index = (y >> 4) - self.min_section_y;

@@ -16,8 +16,8 @@ private val EMPTY_LIST = ArrayList<BlockPosition>()
 
 class AsyncAStarMachine(
     world: Instance,
-    val start: BlockPosition,
-    val goal: BlockPosition,
+    var start: BlockPosition,
+    var goal: BlockPosition,
     val descendingHeight: Int,
     val jumpHeight: Int,
     val maxIteration: Int,
@@ -54,10 +54,13 @@ class AsyncAStarMachine(
 
         val world = this.world.get() ?: return EMPTY_LIST
 
-        val native = this.nativeManager
-        if (native != null) {
-            return native.runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
+        val nativeManager = this.nativeManager
+        if (nativeManager != null) {
+            return nativeManager.runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
         }
+
+        nodeDataMap.clear()
+        sortNodeSet.clear()
 
         //Open first position node
         val startNode = openNode(null, start)

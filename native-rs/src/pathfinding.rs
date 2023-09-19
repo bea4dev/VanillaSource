@@ -2,9 +2,8 @@ use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::mem::transmute_copy;
 use std::ops::{Deref, DerefMut};
-use bumpalo::ManualBumpRef;
 use fxhash::FxHashMap;
-use crate::allocator::ManualAllocatorHolder;
+use crate::allocator::{ManualAllocatorHolder, ManualArenaAllocatorRef};
 use crate::world::ThreadLocalWorld;
 
 
@@ -43,7 +42,7 @@ pub struct NodeRef {
 
 impl NodeRef {
 
-    pub fn new(allocator: ManualBumpRef, position: &BlockPosition, actual_cost: i32, estimated_cost: i32, origin: Option<NodeRef>) -> Self {
+    pub fn new(allocator: ManualArenaAllocatorRef, position: &BlockPosition, actual_cost: i32, estimated_cost: i32, origin: Option<NodeRef>) -> Self {
         let node = Node {
             position: position.clone(),
             is_closed: false,
@@ -119,14 +118,14 @@ pub fn run_pathfinding(
     descending_height: i32,
     jump_height: i32,
     max_iteration: usize
-) -> Vec<BlockPosition, ManualBumpRef> {
+) -> Vec<BlockPosition, ManualArenaAllocatorRef> {
     let allocator = allocator_holder.allocator;
 
     if start.eq(goal) {
         return Vec::new_in(allocator);
     }
 
-    let mut snorted_node_set = BTreeSet::<NodeRef, ManualBumpRef>::new_in(allocator.clone());
+    let mut snorted_node_set = BTreeSet::<NodeRef, ManualArenaAllocatorRef>::new_in(allocator.clone());
     let mut node_map = unsafe { &mut *allocator_holder.cached_map };
 
     //Open first position node
@@ -149,7 +148,7 @@ pub fn run_pathfinding(
         //Max iteration check
         if iteration >= max_iteration {
             //Give up!
-            let mut paths: Vec<BlockPosition, ManualBumpRef> = Vec::new_in(allocator.clone());
+            let mut paths: Vec<BlockPosition, ManualArenaAllocatorRef> = Vec::new_in(allocator.clone());
             paths.push(nearest_node.position.clone());
             get_paths(&nearest_node, &mut paths);
             paths.reverse();
@@ -182,7 +181,7 @@ pub fn run_pathfinding(
         current_node = match snorted_node_set.first() {
             None => {
                 //I couldn't find a path...
-                let mut paths = Vec::<BlockPosition, ManualBumpRef>::new_in(allocator);
+                let mut paths = Vec::<BlockPosition, ManualArenaAllocatorRef>::new_in(allocator);
                 paths.push(nearest_node.position.clone());
                 get_paths(&nearest_node, &mut paths);
                 paths.reverse();
@@ -194,7 +193,7 @@ pub fn run_pathfinding(
 
         //Check goal
         if current_node.position.eq(goal) {
-            let mut paths = Vec::<BlockPosition, ManualBumpRef>::new_in(allocator);
+            let mut paths = Vec::<BlockPosition, ManualArenaAllocatorRef>::new_in(allocator);
             paths.push(current_node.position.clone());
             get_paths(&current_node, &mut paths);
             paths.reverse();
@@ -205,7 +204,7 @@ pub fn run_pathfinding(
 }
 
 
-fn get_paths(node: &NodeRef, paths: &mut Vec<BlockPosition, ManualBumpRef>) {
+fn get_paths(node: &NodeRef, paths: &mut Vec<BlockPosition, ManualArenaAllocatorRef>) {
     let origin = &node.origin;
     match origin {
         None => return,
@@ -217,7 +216,7 @@ fn get_paths(node: &NodeRef, paths: &mut Vec<BlockPosition, ManualBumpRef>) {
 }
 
 fn open_node(
-    allocator: ManualBumpRef,
+    allocator: ManualArenaAllocatorRef,
     origin: Option<NodeRef>,
     block_position: &BlockPosition,
     goal: &BlockPosition,
@@ -246,8 +245,8 @@ fn open_node(
 
 
 impl Node {
-    pub fn get_neighbours(&self, allocator: ManualBumpRef, down: i32, up: i32, world: &mut ThreadLocalWorld) -> Vec<BlockPosition, ManualBumpRef> {
-        let mut neighbour = Vec::<BlockPosition, ManualBumpRef>::new_in(allocator);
+    pub fn get_neighbours(&self, allocator: ManualArenaAllocatorRef, down: i32, up: i32, world: &mut ThreadLocalWorld) -> Vec<BlockPosition, ManualArenaAllocatorRef> {
+        let mut neighbour = Vec::<BlockPosition, ManualArenaAllocatorRef>::new_in(allocator);
         
         let position = self.position.clone();
 
@@ -319,7 +318,7 @@ impl Node {
     }
 
     #[inline(always)]
-    pub fn add_if_can_stand(&self, positions: &mut Vec<BlockPosition, ManualBumpRef>, position: BlockPosition, world: &mut ThreadLocalWorld) -> bool {
+    pub fn add_if_can_stand(&self, positions: &mut Vec<BlockPosition, ManualArenaAllocatorRef>, position: BlockPosition, world: &mut ThreadLocalWorld) -> bool {
         return if can_stand(world, position.x, position.y, position.z) {
             positions.push(position);
             true

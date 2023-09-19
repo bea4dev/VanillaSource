@@ -8,7 +8,7 @@ mod pathfinding;
 mod allocator;
 
 use std::mem::transmute_copy;
-use std::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
+use std::ptr::slice_from_raw_parts;
 use jni::JNIEnv;
 use jni::objects::JIntArray;
 use jni::sys::{jclass, jint, jintArray, jlong, jsize};

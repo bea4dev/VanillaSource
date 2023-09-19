@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
-use bumpalo::ManualBumpRef;
 use fxhash::FxHashMap;
-use crate::allocator::ManualAllocatorHolder;
+use crate::allocator::{ManualAllocatorHolder, ManualArenaAllocatorRef};
 use crate::pathfinding::{BlockPosition, run_pathfinding};
 use crate::world::{Chunk, ThreadLocalWorld, World};
 
@@ -61,8 +60,8 @@ impl ThreadLocalRegistry {
         descending_height: i32,
         jump_height: i32,
         max_iteration: usize
-    ) -> Vec<BlockPosition, ManualBumpRef> {
-        let mut allocator_holder = self.allocator_holder.clone();
+    ) -> Vec<BlockPosition, ManualArenaAllocatorRef> {
+        let allocator_holder = self.allocator_holder.clone();
         allocator_holder.allocator.reset();
         unsafe { &mut *allocator_holder.cached_map }.clear();
 
