@@ -11,30 +11,34 @@ import com.github.bea4dev.vanilla_source.natives.NativeManager
 import com.github.bea4dev.vanilla_source.natives.NativeThreadLocalRegistryManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
-import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncAStarMachine
-import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
+import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
+import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
+import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AStarPathfinder
+import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
+import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityFollowGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.level.util.asBlockPosition
 import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
-import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.MinecraftServer
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
+import net.minestom.server.entity.fakeplayer.FakePlayer
+import net.minestom.server.entity.fakeplayer.FakePlayerOption
+import net.minestom.server.event.player.PlayerChatEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
-import net.minestom.server.network.packet.server.play.EntityTeleportPacket
-import net.minestom.server.network.packet.server.play.SpawnEntityPacket
+import net.minestom.server.timer.Task
 import net.minestom.server.timer.TaskSchedule
-import net.minestom.server.utils.PacketUtils
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 
 class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
@@ -82,23 +86,42 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         // Register events
         registerEntityAttackListener()
 
-        var pathfinder1: AsyncAStarMachine? = null
-        var pathfinder2: AsyncAStarMachine? = null
+        val count = AtomicInteger(0)
+        val tasks = mutableListOf<Task>()
+
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
+            val instance = player.instance
             val position = player.position
-            if (pathfinder1 == null) {
-                pathfinder1 = AsyncAStarMachine(player.instance, position.asBlockPosition(), position.add(100.0, 0.0, 100.0).asBlockPosition(), 3, 1, 10000)
-                pathfinder2 = AsyncAStarMachine(player.instance, position.asBlockPosition(), position.add(100.0, 0.0, 100.0).asBlockPosition(), 3, 1, 10000)
-                pathfinder2!!.nativeManager = NativeThreadLocalRegistryManager()
-            }
 
-            var start = System.nanoTime()
-            pathfinder1!!.runPathFinding()
-            println("Java ${System.nanoTime() - start}[ns]")
-            start = System.nanoTime()
-            pathfinder2!!.runPathFinding()
-            println("Rust ${System.nanoTime() - start}[ns]")
+            tasks += MinecraftServer.getSchedulerManager().scheduleTask({
+                /*
+                val option = FakePlayerOption()
+                val entity = object : FakePlayer(UUID.randomUUID(), "NPC", option, { entity -> entity.teleport(position) }) {
+                    val aiController = EntityAIController(this)
+
+                    override fun tick(time: Long) {
+                        super.tick(time)
+                        aiController.tick(super.position)
+                    }
+                }*/
+                val entity = object : LivingEntity(EntityType.ARMOR_STAND) {
+                    val aiController = EntityAIController(this)
+
+                    override fun tick(time: Long) {
+                        super.tick(time)
+                        aiController.tick(super.position)
+                    }
+                }
+                entity.isAutoViewable = count.get() < 200
+                entity.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.15F
+                val navigator = entity.aiController.navigator
+                navigator.setAsync()
+                navigator.setPathfindingInterval(50)
+                entity.aiController.goalSelector.goals += EntityFollowGoal(player)
+                entity.setInstance(instance, position)
+                player.sendMessage(Component.text("npc -> ${count.addAndGet(1)}"))
+            }, TaskSchedule.nextTick(), TaskSchedule.tick(5))
 
             /*
             val zombie = TestZombie()
@@ -108,7 +131,13 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             zombie.setNoGravity(false)
             zombie.setInstance(player.instance, player.position)*/
         }
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerChatEvent::class.java) { _ ->
+            tasks.forEach { task -> task.cancel() }
+        }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
+            if (event.player is FakePlayer) {
+                return@addListener
+            }
             event.player.permissionLevel = 2
             val item = ItemRegistry.INSTANCE["pipe"]!!
             event.player.inventory.addItemStack(item.createItemStack().withMeta { builder -> builder.customModelData(1) })
@@ -130,6 +159,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             nativeManager.init()
 
             registerTask()
+            registerBenchmarkTask()
 
             // Load all levels
             val defaultLevelConfig = serverConfig.level.default
@@ -162,6 +192,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             MinecraftServer.setChunkViewDistance(serverConfig.settings.chunkViewDistance)
             MinecraftServer.setEntityViewDistance(serverConfig.settings.entityViewDistance)
 
+            // Start async pathfinder threads
+            AsyncPathfinderThread.initialize(serverConfig.settings.asyncPathfindingThreads)
+
             // Register shutdown task
             MinecraftServer.getSchedulerManager().buildShutdownTask {
                 logger.info("Good night.")
@@ -192,6 +225,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
     fun stop() {
         if (isRunning.getAndSet(false)) {
             MinecraftServer.stopCleanly()
+            AsyncPathfinderThread.shutdownAll()
             console?.stop()
         }
     }
@@ -201,6 +235,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             logger.warn("!!! SERVER IS STOPPED WITH FATAL ERROR !!!")
             error.printStackTrace()
             MinecraftServer.stopCleanly()
+            AsyncPathfinderThread.shutdownAll()
             console?.stop()
         }
     }

@@ -16,7 +16,7 @@ class EntityTargetAttackGoal(
     private val attackIntervalTicks: Long
 ) : PathfindingGoal {
 
-    private val randomTickAdditional = Random.nextLong(20)
+    private val randomTickAdditional = Random.nextLong(INTERVAL)
     private var endOfAttackCoolTime = 0L
 
     override fun run(goalSelector: GoalSelector, navigator: EntityNavigator, time: Long): Boolean {

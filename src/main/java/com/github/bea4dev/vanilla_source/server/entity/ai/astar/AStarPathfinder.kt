@@ -14,15 +14,15 @@ import kotlin.math.abs
 
 private val EMPTY_LIST = ArrayList<BlockPosition>()
 
-class AsyncAStarMachine(
-    world: Instance,
-    var start: BlockPosition,
-    var goal: BlockPosition,
+class AStarPathfinder(
+    level: Instance?,
     val descendingHeight: Int,
     val jumpHeight: Int,
     val maxIteration: Int,
 ) {
-    private val world = WeakReference(world)
+    var start = BlockPosition(0, 0, 0)
+    var goal = BlockPosition(0, 0, 0)
+    private var level = WeakReference(level)
 
     //NodeData map
     private val nodeDataMap: MutableMap<BlockPosition, NodeData> = HashMap<BlockPosition, NodeData>()
@@ -30,19 +30,24 @@ class AsyncAStarMachine(
     //Sorted node
     private val sortNodeSet: MutableSet<NodeData> = HashSet()
 
-    private val levelId = world.getNativeID()
-    var nativeManager: NativeThreadLocalRegistryManager? = null
+    private var levelId = level.getNativeID()
+    private var nativeManager = NativeThreadLocalRegistryManager.getForLevelEntityThread(level)
+    var useNative = true
 
     fun runPathfindingAsync(): CompletableFuture<List<BlockPosition>> {
-        val completableFuture = CompletableFuture<List<BlockPosition>>()
-
-        //Start pathfinding at async
-        MinecraftServer.getSchedulerManager().scheduleNextProcess({
-            completableFuture.complete(
-                runPathFinding()
-            )
-        }, ExecutionType.ASYNC)
-        return completableFuture
+        val future = if (useNative) {
+            AsyncPathfinderThread.getThread().runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
+        } else {
+            // Start pathfinding at async
+            val completableFuture = CompletableFuture<List<BlockPosition>>()
+            MinecraftServer.getSchedulerManager().scheduleNextProcess({
+                completableFuture.complete(
+                    runPathFinding()
+                )
+            }, ExecutionType.ASYNC)
+            completableFuture
+        }
+        return future
     }
 
     fun runPathFinding(): List<BlockPosition> {
@@ -52,27 +57,23 @@ class AsyncAStarMachine(
             return EMPTY_LIST
         }
 
-        val world = this.world.get() ?: return EMPTY_LIST
+        val level = this.level.get() ?: return EMPTY_LIST
 
         val nativeManager = this.nativeManager
-        if (nativeManager != null) {
+        if (useNative) {
             return nativeManager.runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
         }
 
         nodeDataMap.clear()
         sortNodeSet.clear()
 
-        //Open first position node
+        // Open first position node
         val startNode = openNode(null, start)
         startNode.isClosed = true
 
-        //Current node
         var currentNode = startNode
-
-        //Nearest node
         var nearestNode = currentNode
 
-        //Iteration count
         var iteration = 0
 
         //Start pathfinding
@@ -96,7 +97,7 @@ class AsyncAStarMachine(
             }
 
             //Audiences.players().forEachAudience { player -> (player as Player).sendPacket(BlockChangePacket(currentNode.blockPosition.asPos(), Block.GLASS)) }
-            for (blockPosition in currentNode.getNeighbourBlockPosition(descendingHeight, jumpHeight, world)) {
+            for (blockPosition in currentNode.getNeighbourBlockPosition(descendingHeight, jumpHeight, level)) {
                 //Check if closed
                 val newNode = openNode(currentNode, blockPosition)
                 if (newNode.isClosed) continue
@@ -184,6 +185,12 @@ class AsyncAStarMachine(
                 estimatedCost
             )
         }
+    }
+
+    fun updateLevel(level: Instance) {
+        this.level = WeakReference(level)
+        this.levelId = level.getNativeID()
+        this.nativeManager = NativeThreadLocalRegistryManager.getForLevelEntityThread(level)
     }
 
 }

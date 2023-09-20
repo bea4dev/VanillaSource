@@ -61,17 +61,17 @@ class NativeManager {
 
 enum class Environment(val fileName: String) {
     WINDOWS_X64("vanilla_source_windows_x64.dll"),
-    LINUX_X64("libvanilla_source_linux_x64.lib"),
-    MACOS_X64("libvanilla_source_macos_x64.so"),
+    LINUX_X64("libvanilla_source_linux_x64.so"),
+    MACOS_X64("libvanilla_source_macos_x64.dylib"),
     MACOS_AARCH64("libvanilla_source_macos_aarch64.dylib")
 }
 
 fun getEnvironment(): Environment? {
     val cpu = System.getProperty("os.arch")
-    if (cpu != "x86_64" && cpu != "aarch64") {
+    if (cpu != "x86_64" && cpu != "amd64" && cpu != "aarch64") {
         return null
     }
-    return if (cpu == "x86_64") {
+    return if (cpu == "amd64" || cpu == "x86_64") {
         if (SystemUtils.IS_OS_WINDOWS) {
             Environment.WINDOWS_X64
         } else if (SystemUtils.IS_OS_LINUX) {

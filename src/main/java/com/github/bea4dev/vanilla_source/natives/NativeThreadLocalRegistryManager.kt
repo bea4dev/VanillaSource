@@ -1,17 +1,35 @@
 package com.github.bea4dev.vanilla_source.natives
 
 import com.github.bea4dev.vanilla_source.server.level.util.BlockPosition
+import net.minestom.server.instance.Instance
+import java.util.concurrent.ConcurrentHashMap
 
 class NativeThreadLocalRegistryManager {
+
+    companion object {
+        private val levelMap = ConcurrentHashMap<Int, NativeThreadLocalRegistryManager>()
+
+        fun getForLevelEntityThread(level: Instance?): NativeThreadLocalRegistryManager {
+            return levelMap.computeIfAbsent(level.getNativeID()) { NativeThreadLocalRegistryManager() }
+        }
+
+        internal fun removeForLevelEntityThreadUnsafe(level: Instance) {
+            levelMap[level.getNativeID()]?.deleteUnsafe()
+            levelMap.remove(level.getNativeID())
+        }
+    }
+
+
     private val registryAddress = NativeBridge.createThreadLocalRegistry()
 
     private val argsArray = IntArray(9)
     private var returnArray = IntArray(200)
-    private val cachedPathList = mutableListOf<BlockPosition>()
+    private var thread: Thread? = null
 
     fun runPathfinding(levelId: Int, start: BlockPosition, goal: BlockPosition, descendingHeight: Int, jumpHeight: Int, maxIteration: Int): List<BlockPosition> {
-        val paths = this.cachedPathList
-        paths.clear()
+        checkThread()
+
+        val paths = mutableListOf<BlockPosition>()
 
         argsArray[0] = start.x
         argsArray[1] = start.y
@@ -33,8 +51,25 @@ class NativeThreadLocalRegistryManager {
         return paths
     }
 
+    fun releaseChunk(levelId: Int, chunkX: Int, chunkZ: Int) {
+        checkThread()
+        NativeBridge.unregisterChunk(registryAddress, levelId, chunkX, chunkZ)
+    }
+
     fun deleteUnsafe() {
+        checkThread()
         NativeBridge.removeThreadLocalRegistry(registryAddress)
+    }
+
+    private fun checkThread() {
+        val thread = this.thread
+        if (thread == null) {
+            this.thread = Thread.currentThread()
+        } else {
+            if (thread != Thread.currentThread()) {
+                throw IllegalStateException("It is not allowed to run this task in other thread.")
+            }
+        }
     }
 
 }

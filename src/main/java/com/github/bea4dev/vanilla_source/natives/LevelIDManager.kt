@@ -8,12 +8,12 @@ import kotlin.concurrent.withLock
 class LevelIDManager {
 
     companion object {
-        private val idMap = WeakHashMap<Instance, Int>()
+        private val idMap = WeakHashMap<Instance?, Int>()
         private var id = 0
         private val lock = ReentrantLock()
 
         @JvmStatic
-        fun getId(level: Instance): Int {
+        fun getId(level: Instance?): Int {
             return lock.withLock {
                 idMap.computeIfAbsent(level) { id++ }
             }
@@ -23,6 +23,6 @@ class LevelIDManager {
 }
 
 
-fun Instance.getNativeID(): Int {
+fun Instance?.getNativeID(): Int {
     return LevelIDManager.getId(this)
 }

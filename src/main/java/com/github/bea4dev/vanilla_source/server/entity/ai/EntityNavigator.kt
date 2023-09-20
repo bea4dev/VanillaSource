@@ -1,20 +1,24 @@
 package com.github.bea4dev.vanilla_source.server.entity.ai
 
 import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
-import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncAStarMachine
+import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AStarPathfinder
 import com.github.bea4dev.vanilla_source.server.entity.isOnGroundStrict
 import com.github.bea4dev.vanilla_source.server.entity.move
 import com.github.bea4dev.vanilla_source.server.level.util.BlockPosition
 import com.github.bea4dev.vanilla_source.util.ContanUtil
+import net.kyori.adventure.text.Component
+import net.minestom.server.adventure.audience.Audiences
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.collision.CollisionUtils
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.Entity
-import net.minestom.server.entity.EntityCreature
+import net.minestom.server.entity.LivingEntity
+import net.minestom.server.instance.Instance
 import org.contan_lang.runtime.JavaContanFuture
 import org.contan_lang.variables.ContanObject
 import org.contan_lang.variables.primitive.ContanVoidObject
+import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.math.floor
@@ -24,7 +28,6 @@ import kotlin.math.sqrt
 @Suppress("UnstableApiUsage", "unused")
 class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Double, var smoothJumpHeight: Double, val descendingHeight: Int) {
 
-    //Goal
     private var navigationGoal: BlockPosition? = null
     private var previousNavigationGoal: BlockPosition? = null
     private var goalFuture: JavaContanFuture? = null
@@ -32,12 +35,12 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
     private var tickSyncTask: Runnable? = null
     private var currentPaths: List<BlockPosition>? = null
     private var currentPathIndex = 0
+    private val pathfinder = AStarPathfinder(entity.instance, descendingHeight, floor(jumpHeight).toInt(), 50)
 
-    private val isCreature = entity is EntityCreature
+    private val isLiving = entity is LivingEntity
+    private var previousLevel: WeakReference<Instance?> = WeakReference(entity.instance)
 
-
-    //Interval at which pathfinding is performed
-    var pathfindingInterval = 1
+    private var pathfindingInterval = 1
     private var tick = Random().nextInt(pathfindingInterval)
     private val highAccuracy = false
     private var isAsyncPathfinding = false
@@ -50,6 +53,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
     var enable = true
     var ignorePathfinding = false
 
+    private var thread: Thread? = null
 
     @Suppress("DuplicatedCode")
     fun tick(pos: Pos) {
@@ -57,8 +61,17 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             return
         }
 
-        if (this.isCreature) {
-            this.speed = (this.entity as EntityCreature).getAttribute(Attribute.MOVEMENT_SPEED).baseValue
+        val thread = this.thread
+        if (thread == null) {
+            this.thread = Thread.currentThread()
+        } else {
+            if (thread != Thread.currentThread()) {
+                throw IllegalStateException("wrong thread")
+            }
+        }
+
+        if (this.isLiving) {
+            this.speed = (this.entity as LivingEntity).getAttribute(Attribute.MOVEMENT_SPEED).baseValue
         }
 
         if (isJumping) {
@@ -80,10 +93,21 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             this.tickSyncTask = null
         }
 
-        //Update pathfinding
         if (!entity.isOnGround) {
             return
         }
+
+        val currentLevel = this.entity.instance
+        if (!this.previousLevel.refersTo(currentLevel)) {
+            this.previousLevel = WeakReference(currentLevel)
+            pathfinder.updateLevel(currentLevel)
+            navigationGoal = null
+            currentPaths = null
+            currentPathIndex = 0
+            return
+        }
+
+        // Update pathfinding
         if (tick % pathfindingInterval == 0) {
             val pathfindingTask = this.pathfindingTask
             if (pathfindingTask == null) {
@@ -103,10 +127,9 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
             }
         }
 
-        //Make the entity walk along the path.
         val currentPaths = currentPaths ?: return
 
-        //Get next path point
+        // Get next path point
         if (currentPaths.size <= currentPathIndex) {
             this.currentPaths = null
             currentPathIndex = 0
@@ -225,50 +248,25 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
 
         if (!isAsyncPathfinding) {
             val start = BlockPosition(locX, locY, locZ)
-            val paths = AsyncAStarMachine(
-                entity.instance, start, navigationGoal, descendingHeight, jumpHeight.toInt(), 50
-            ).runPathFinding()
+            pathfinder.start = start
+            pathfinder.goal = navigationGoal
+            val paths = pathfinder.runPathFinding()
 
-            //merge
-            /*
-            val currentPaths: MutableList<BlockPosition> = mutableListOf()
-            var i = 0
-            loop@while (true) {
-                var currentPosition = paths.getOrNull(i) ?: break
-                currentPaths += currentPosition
-
-                val nextPosition = paths.getOrNull(++i) ?: break
-                val deltaX = nextPosition.x - currentPosition.x
-                val deltaZ = nextPosition.z - currentPosition.z
-
-                var previousPosition = nextPosition
-                while (true) {
-                    currentPosition = paths.getOrNull(i + 1) ?: continue@loop
-                    val currentDeltaX = currentPosition.x - previousPosition.x
-                    val currentDeltaZ = currentPosition.z - previousPosition.z
-                    if (deltaX != currentDeltaX || deltaZ != currentDeltaZ) {
-                        continue@loop
-                    }
-                    previousPosition = currentPosition
-                    i++
-                }
-            }*/
             this.currentPaths = paths
 
             currentPathIndex = 0
             return
         }
 
-        //Start AsyncAStarMachine
+        // Start AsyncAStarMachine
         val start = BlockPosition(locX, locY, locZ)
-        val asyncAStarMachine = AsyncAStarMachine(
-            entity.instance, start, navigationGoal, descendingHeight, jumpHeight.toInt(), 50
-        )
-        pathfindingTask = asyncAStarMachine.runPathfindingAsync()
+        pathfinder.start = start
+        pathfinder.goal = navigationGoal
+        pathfindingTask = pathfinder.runPathfindingAsync()
 
-        //Then finish pathfinding
+        // Then finish pathfinding
         pathfindingTask!!.thenAccept { paths ->
-            if (paths.size == 0) { //Failure
+            if (paths.isEmpty()) {
                 tickSyncTask = Runnable {
                     currentPaths = null
                     currentPathIndex = 0
@@ -276,34 +274,9 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
                 return@thenAccept
             }
 
-            //merge
-            /*
-            val currentPaths: MutableList<BlockPosition> = mutableListOf()
-            var i = 0
-            loop@while (true) {
-                var currentPosition = paths.getOrNull(i) ?: break
-                currentPaths += currentPosition
-
-                val nextPosition = paths.getOrNull(++i) ?: break
-                val deltaX = nextPosition.x - currentPosition.x
-                val deltaZ = nextPosition.z - currentPosition.z
-
-                var previousPosition = nextPosition
-                while (true) {
-                    currentPosition = paths.getOrNull(i + 1) ?: continue@loop
-                    val currentDeltaX = currentPosition.x - previousPosition.x
-                    val currentDeltaZ = currentPosition.z - previousPosition.z
-                    if (deltaX != currentDeltaX || deltaZ != currentDeltaZ) {
-                        continue@loop
-                    }
-                    previousPosition = currentPosition
-                    i++
-                }
-            }*/
-
             tickSyncTask = Runnable {
                 this.currentPaths = paths
-                currentPathIndex = 0
+                currentPathIndex = 1
             }
         }
     }
@@ -323,11 +296,16 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
         return navigationGoal
     }
 
-    fun asAsync() {
+    fun setAsync() {
         isAsyncPathfinding = true
         if (pathfindingInterval == 1) {
-            pathfindingInterval++
+            setPathfindingInterval(2)
         }
+    }
+
+    fun setPathfindingInterval(interval: Int) {
+        this.pathfindingInterval = interval
+        this.tick += Random().nextInt(interval)
     }
 }
 

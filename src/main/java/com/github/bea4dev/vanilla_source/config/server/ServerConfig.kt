@@ -16,7 +16,7 @@ data class ServerConfig(
         override fun default(): TomlConfig {
             return ServerConfig(
                 AddressAndPort("0.0.0.0", 25565),
-                ServerSettings(false, 12, 8),
+                ServerSettings(false, 4, 12, 8),
                 LevelConfigs(
                     DefaultLevel("debug", "CREATIVE", Position(0.0, 66.0, 0.0, null, null)),
                     listOf(LevelConfig("debug", null, "debug", "overworld", false)),
@@ -27,9 +27,10 @@ data class ServerConfig(
         override fun mapper(): TomlMapper {
             return tomlMapper {
                 mapping<ServerSettings>(
-                    "enable_model_engine"  to "enableModelEngine",
-                    "chunk_view_distance"  to "chunkViewDistance",
-                    "entity_view_distance" to "entityViewDistance"
+                    "enable_model_engine"        to "enableModelEngine",
+                    "async_pathfinding_threads"  to "asyncPathfindingThreads",
+                    "chunk_view_distance"        to "chunkViewDistance",
+                    "entity_view_distance"       to "entityViewDistance"
                 )
                 mapping<DefaultLevel>("spawn_position" to "spawnPosition", "game_mode" to "gameMode")
                 mapping<LevelConfig>("dimension_type" to "dimensionType")
@@ -39,7 +40,12 @@ data class ServerConfig(
 
 }
 
-data class ServerSettings(val enableModelEngine: Boolean, val chunkViewDistance: Int, val entityViewDistance: Int)
+data class ServerSettings(
+    val enableModelEngine: Boolean,
+    val asyncPathfindingThreads: Int,
+    val chunkViewDistance: Int,
+    val entityViewDistance: Int
+)
 
 data class AddressAndPort(val ip: String, val port: Int)
 
