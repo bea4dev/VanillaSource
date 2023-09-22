@@ -4,6 +4,7 @@ port = 25565
 
 [settings]
 enable_model_engine = false
+max_world_tick_threads = 4
 async_pathfinding_threads = 4
 chunk_view_distance = 12
 entity_view_distance = 8

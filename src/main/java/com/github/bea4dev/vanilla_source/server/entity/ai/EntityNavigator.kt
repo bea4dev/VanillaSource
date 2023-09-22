@@ -26,7 +26,7 @@ import kotlin.math.sqrt
 
 
 @Suppress("UnstableApiUsage", "unused")
-class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Double, var smoothJumpHeight: Double, val descendingHeight: Int) {
+class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Double, var smoothJumpHeight: Double, descendingHeight: Int) {
 
     private var navigationGoal: BlockPosition? = null
     private var previousNavigationGoal: BlockPosition? = null
@@ -241,6 +241,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
                 return
             }
         }
+        this.previousNavigationGoal = navigationGoal
 
         if (!entity.isOnGround) {
             return
@@ -282,7 +283,6 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
     }
 
     fun setNavigationGoal(navigationGoal: BlockPosition?) {
-        this.previousNavigationGoal = this.navigationGoal
         this.navigationGoal = navigationGoal
     }
 

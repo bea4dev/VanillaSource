@@ -8,18 +8,16 @@ import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.natives.NativeManager
-import com.github.bea4dev.vanilla_source.natives.NativeThreadLocalRegistryManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
-import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AStarPathfinder
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
 import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityFollowGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
+import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
-import com.github.bea4dev.vanilla_source.server.level.util.asBlockPosition
 import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.kyori.adventure.text.Component
@@ -32,6 +30,7 @@ import net.minestom.server.event.player.PlayerChatEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
+import net.minestom.server.thread.ThreadDispatcher
 import net.minestom.server.timer.Task
 import net.minestom.server.timer.TaskSchedule
 import org.slf4j.LoggerFactory
@@ -41,9 +40,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 
+@Suppress("UnstableApiUsage")
 class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
+    private val minecraftServer: MinecraftServer = MinecraftServer.initWithCustomDispatcher(
+        ThreadDispatcher.of(LevelChunkThreadProvider(serverConfig.settings.maxWorldTickThreads), serverConfig.settings.maxWorldTickThreads))
 
-    private val minecraftServer: MinecraftServer = MinecraftServer.init()
     val nativeManager = NativeManager()
     val logger = LoggerFactory.getLogger("VanillaSource")!!
     private var defaultLevel: Instance? = null
@@ -91,20 +92,35 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
-            val instance = player.instance
             val position = player.position
 
+
+            val size = 20
+            for (i in 0..<serverConfig.settings.maxWorldTickThreads) {
+                val instance = Level.getLevel("debug$i")!!
+                for (x in -size..<size) {
+                    for (z in -size..<size) {
+                        instance.loadChunk(x, z)
+                    }
+                }
+            }
+
             tasks += MinecraftServer.getSchedulerManager().scheduleTask({
-                /*
+                val instance = Level.getLevel("debug${count.get() % serverConfig.settings.maxWorldTickThreads}")!!
+
                 val option = FakePlayerOption()
                 val entity = object : FakePlayer(UUID.randomUUID(), "NPC", option, { entity -> entity.teleport(position) }) {
                     val aiController = EntityAIController(this)
 
                     override fun tick(time: Long) {
+                        if (super.instance != instance) {
+                            return
+                        }
                         super.tick(time)
                         aiController.tick(super.position)
                     }
-                }*/
+                }
+                /*
                 val entity = object : LivingEntity(EntityType.ARMOR_STAND) {
                     val aiController = EntityAIController(this)
 
@@ -112,18 +128,20 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
                         super.tick(time)
                         aiController.tick(super.position)
                     }
+                }*/
+                entity.isAutoViewable = false
+                if (count.get() < 200) {
+                    entity.addViewer(player)
                 }
-                entity.isAutoViewable = count.get() < 200
                 entity.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.15F
                 val navigator = entity.aiController.navigator
-                navigator.setAsync()
                 navigator.setPathfindingInterval(50)
                 entity.aiController.goalSelector.goals += EntityFollowGoal(player)
                 entity.setInstance(instance, position)
                 player.sendMessage(Component.text("npc -> ${count.addAndGet(1)}"))
             }, TaskSchedule.nextTick(), TaskSchedule.tick(5))
 
-            /*
+/*
             val zombie = TestZombie()
             zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.16F
             zombie.isAutoViewable = true
