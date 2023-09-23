@@ -14,11 +14,13 @@ import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
 import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityFollowGoal
+import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
+import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.kyori.adventure.text.Component
 import net.minestom.server.MinecraftServer
@@ -30,6 +32,8 @@ import net.minestom.server.event.player.PlayerChatEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
+import net.minestom.server.network.packet.server.play.PlayerInfoRemovePacket
+import net.minestom.server.network.packet.server.play.PlayerInfoUpdatePacket
 import net.minestom.server.thread.ThreadDispatcher
 import net.minestom.server.timer.Task
 import net.minestom.server.timer.TaskSchedule
@@ -87,70 +91,15 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         // Register events
         registerEntityAttackListener()
 
-        val count = AtomicInteger(0)
-        val tasks = mutableListOf<Task>()
-
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
-            val position = player.position
 
-
-            val size = 20
-            for (i in 0..<serverConfig.settings.maxWorldTickThreads) {
-                val instance = Level.getLevel("debug$i")!!
-                for (x in -size..<size) {
-                    for (z in -size..<size) {
-                        instance.loadChunk(x, z)
-                    }
-                }
-            }
-
-            tasks += MinecraftServer.getSchedulerManager().scheduleTask({
-                val instance = Level.getLevel("debug${count.get() % serverConfig.settings.maxWorldTickThreads}")!!
-
-                val option = FakePlayerOption()
-                val entity = object : FakePlayer(UUID.randomUUID(), "NPC", option, { entity -> entity.teleport(position) }) {
-                    val aiController = EntityAIController(this)
-
-                    override fun tick(time: Long) {
-                        if (super.instance != instance) {
-                            return
-                        }
-                        super.tick(time)
-                        aiController.tick(super.position)
-                    }
-                }
-                /*
-                val entity = object : LivingEntity(EntityType.ARMOR_STAND) {
-                    val aiController = EntityAIController(this)
-
-                    override fun tick(time: Long) {
-                        super.tick(time)
-                        aiController.tick(super.position)
-                    }
-                }*/
-                entity.isAutoViewable = false
-                if (count.get() < 200) {
-                    entity.addViewer(player)
-                }
-                entity.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.15F
-                val navigator = entity.aiController.navigator
-                navigator.setPathfindingInterval(50)
-                entity.aiController.goalSelector.goals += EntityFollowGoal(player)
-                entity.setInstance(instance, position)
-                player.sendMessage(Component.text("npc -> ${count.addAndGet(1)}"))
-            }, TaskSchedule.nextTick(), TaskSchedule.tick(5))
-
-/*
             val zombie = TestZombie()
             zombie.getAttribute(Attribute.MOVEMENT_SPEED).baseValue = 0.16F
             zombie.isAutoViewable = true
             zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.5, 5)
             zombie.setNoGravity(false)
-            zombie.setInstance(player.instance, player.position)*/
-        }
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerChatEvent::class.java) { _ ->
-            tasks.forEach { task -> task.cancel() }
+            zombie.setInstance(player.instance, player.position)
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
             if (event.player is FakePlayer) {
