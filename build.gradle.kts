@@ -90,10 +90,15 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["java"])
+                groupId = "com.github.bea4dev"
+                artifactId = "VanillaSource"
+                version = "1.0-SNAPSHOT"
+            }
         }
     }
 }
