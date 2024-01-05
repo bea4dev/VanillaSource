@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("java")
     id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("maven-publish")
     kotlin("jvm") version "1.9.10"
     kotlin("plugin.serialization") version "1.9.0"
     application
