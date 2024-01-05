@@ -54,6 +54,9 @@ dependencies {
 
     // For native libs
     implementation("org.apache.commons:commons-lang3:3.13.0")
+
+    // Misc
+    implementation("com.google.guava:guava:33.0.0-jre")
 }
 
 tasks.test {

@@ -9,6 +9,7 @@ import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.natives.NativeManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
+import com.github.bea4dev.vanilla_source.plugin.PluginManager
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
@@ -54,6 +55,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
     val logger = LoggerFactory.getLogger("VanillaSource")!!
     private var defaultLevel: Instance? = null
     private val isRunning = AtomicBoolean(false)
+    private val pluginManager = PluginManager()
 
     companion object {
         private var server: VanillaSource? = null
@@ -132,6 +134,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             registerTask()
             registerBenchmarkTask()
 
+            // Load plugins
+            pluginManager.onEnable()
+
             // Load all levels
             val defaultLevelConfig = serverConfig.level.default
             for (levelConfig in serverConfig.level.levels) {
@@ -197,6 +202,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         if (isRunning.getAndSet(false)) {
             MinecraftServer.stopCleanly()
             AsyncPathfinderThread.shutdownAll()
+            pluginManager.onDisable()
             console?.stop()
         }
     }
