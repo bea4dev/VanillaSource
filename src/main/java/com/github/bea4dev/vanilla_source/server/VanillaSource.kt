@@ -20,6 +20,7 @@ import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
+import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
 import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
 import net.kyori.adventure.text.Component
@@ -109,6 +110,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             val item = ItemRegistry.INSTANCE["pipe"]!!
             event.player.inventory.addItemStack(item.createItemStack().withMeta { builder -> builder.customModelData(1) })
         }
+
+        // Register player object provider
+        MinecraftServer.getConnectionManager().setPlayerProvider(VanillaSourcePlayerProvider())
     }
 
     @Suppress("DEPRECATION")
