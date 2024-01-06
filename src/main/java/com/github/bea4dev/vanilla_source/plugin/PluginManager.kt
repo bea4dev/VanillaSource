@@ -1,5 +1,6 @@
 package com.github.bea4dev.vanilla_source.plugin
 
+import com.github.bea4dev.vanilla_source.server.VanillaSource
 import com.google.common.reflect.ClassPath
 import org.slf4j.LoggerFactory
 import java.net.URLClassLoader
@@ -8,8 +9,6 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.util.*
 import java.util.stream.Collectors
 import kotlin.collections.ArrayList
-import kotlin.collections.HashSet
-import kotlin.io.path.Path
 
 class PluginManager {
     private val plugins = ArrayList<VanillaSourcePlugin>()
@@ -18,28 +17,7 @@ class PluginManager {
     fun onEnable() {
         logger.info("Loading plugins...")
 
-        for (file in listFiles(Path("plugins"))) {
-            val loader = URLClassLoader.newInstance(arrayOf(file.toUri().toURL()))
-
-            val allPluginClasses = ClassPath.from(loader).topLevelClasses.stream()
-                .map { info -> info.load() }
-                .filter { clazz -> clazz.isImplements(VanillaSourcePlugin::class.java) }
-                .collect(Collectors.toSet())
-
-            val nameSet = HashSet<String>()
-
-            for (pluginClass in allPluginClasses) {
-                val pluginName = pluginClass.simpleName
-                if (nameSet.contains(pluginName)) {
-                    throw IllegalStateException("Duplicated plugin name '${pluginName}'")
-                }
-                nameSet.add(pluginName)
-
-                val plugin = pluginClass.getConstructor().newInstance() as VanillaSourcePlugin
-                plugin.onEnable()
-                this.plugins.add(plugin)
-            }
-        }
+        loadPluginsInTree(Path.of("plugins"))
     }
 
     fun onDisable() {
@@ -50,44 +28,67 @@ class PluginManager {
         }
     }
 
-    private fun listFiles(root: Path): List<Path> {
-        val result: MutableList<Path> = mutableListOf()
-
-        val queue: Queue<Path> = LinkedList()
-        queue.add(root)
+    private fun loadPluginsInTree(root: Path) {
+        val queue: Queue<Pair<Path, ClassLoader>> = LinkedList()
+        queue.add(Pair(root, VanillaSource::class.java.classLoader))
 
         while (queue.isNotEmpty()) {
-            val currentPath = queue.poll()
+            val current = queue.poll()
+            val currentPath = current.first
+            val currentClassLoader = current.second
 
-            if (Files.isDirectory(currentPath)) {
-                try {
-                    Files.walkFileTree(
-                        currentPath,
-                        EnumSet.noneOf(FileVisitOption::class.java),
-                        Int.MAX_VALUE,
-                        object : SimpleFileVisitor<Path>() {
-                            override fun visitFile(file: Path?, attrs: BasicFileAttributes?): FileVisitResult {
-                                if (file != null) {
-                                    result.add(file)
-                                }
-                                return FileVisitResult.CONTINUE
-                            }
+            if (Files.exists(currentPath) && Files.isDirectory(currentPath)) {
+                val files = ArrayList<Path>()
+                val dirs = ArrayList<Path>()
 
-                            override fun preVisitDirectory(dir: Path?, attrs: BasicFileAttributes?): FileVisitResult {
-                                if (dir != null) {
-                                    queue.add(dir)
-                                }
-                                return FileVisitResult.CONTINUE
+                Files.walkFileTree(
+                    currentPath,
+                    EnumSet.noneOf(FileVisitOption::class.java),
+                    Int.MAX_VALUE,
+                    object : SimpleFileVisitor<Path>() {
+                        override fun visitFile(file: Path?, attrs: BasicFileAttributes?): FileVisitResult {
+                            if (file != null) {
+                                files.add(file)
                             }
+                            return FileVisitResult.CONTINUE
                         }
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
+
+                        override fun preVisitDirectory(dir: Path?, attrs: BasicFileAttributes?): FileVisitResult {
+                            if (dir != null && currentPath != dir) {
+                                dirs.add(dir)
+                            }
+                            return FileVisitResult.CONTINUE
+                        }
+                    }
+                )
+
+                val uris = files.stream().map { file -> file.toUri().toURL() }.collect(Collectors.toList()).toTypedArray()
+                val loader = URLClassLoader.newInstance(uris, currentClassLoader)
+
+                val allPluginClasses = ClassPath.from(loader).topLevelClasses.stream()
+                    .map { info -> try { info.load() } catch (_: NoClassDefFoundError) { null } }
+                    .filter { clazz -> clazz?.isImplements(VanillaSourcePlugin::class.java)?: false }
+                    .collect(Collectors.toSet())
+
+                val nameSet = HashSet<String>()
+
+                for (pluginClass in allPluginClasses) {
+                    val pluginName = pluginClass!!.simpleName
+                    if (nameSet.contains(pluginName)) {
+                        throw IllegalStateException("Duplicated plugin name '${pluginName}'")
+                    }
+                    nameSet.add(pluginName)
+
+                    val plugin = pluginClass.getConstructor().newInstance() as VanillaSourcePlugin
+                    plugin.onEnable()
+                    plugins.add(plugin)
+                }
+
+                for (dir in dirs) {
+                    queue.add(Pair(dir, loader))
                 }
             }
         }
-
-        return result
     }
 
 }

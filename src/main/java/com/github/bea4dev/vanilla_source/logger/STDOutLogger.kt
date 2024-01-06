@@ -11,7 +11,8 @@ class STDOutLogger(original: PrintStream): PrintStream(original) {
         val logger = if (caller == null) {
             LoggerFactory.getLogger("STDOUT")
         } else {
-            LoggerFactory.getLogger(Class.forName(caller.className))
+            val split = caller.className.split(".")
+            LoggerFactory.getLogger(split[split.size - 1])
         }
         logger.info(x?.toString())
     }

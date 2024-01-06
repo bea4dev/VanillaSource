@@ -18,4 +18,8 @@ class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: Player
         }
     }
 
+    fun addTickTask(task: Consumer<Long>) {
+        this.tickTasks.add(task)
+    }
+
 }
