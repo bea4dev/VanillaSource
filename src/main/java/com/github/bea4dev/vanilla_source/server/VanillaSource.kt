@@ -102,7 +102,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             zombie.isAutoViewable = true
             zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.5, 5)
             zombie.setNoGravity(false)
-            zombie.setInstance(player.instance, player.position)
+            //zombie.setInstance(player.instance, player.position)
         }
         MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
             if (event.player is FakePlayer) {
