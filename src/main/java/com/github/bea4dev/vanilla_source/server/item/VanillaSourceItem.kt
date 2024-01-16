@@ -7,6 +7,16 @@ import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.tag.Tag
 
+
+fun ItemStack.getItem(): VanillaSourceItem? {
+    return VanillaSourceItem.fromItemStack(this)
+}
+
+fun ItemStack.getItemId(): String? {
+    return VanillaSourceItem.getItemId(this)
+}
+
+
 abstract class VanillaSourceItem(
     val id: String,
     val material: Material,
@@ -17,6 +27,17 @@ abstract class VanillaSourceItem(
     companion object {
         @JvmStatic
         val idTag = Tag.String("vanilla_source_item_id")
+
+        @JvmStatic
+        fun fromItemStack(itemStack: ItemStack): VanillaSourceItem? {
+            val id = getItemId(itemStack) ?: return null
+            return ItemRegistry.INSTANCE[id]
+        }
+
+        @JvmStatic
+        fun getItemId(itemStack: ItemStack): String? {
+            return itemStack.meta().getTag(idTag)
+        }
     }
 
     fun createItemStack(): ItemStack {
@@ -38,6 +59,8 @@ abstract class VanillaSourceItem(
 
     protected abstract fun createBaseItemStack(): ItemStack
 
-    abstract fun onAttack(player: Player, target: Entity?, itemStack: ItemStack)
+    abstract fun onEntityAttack(player: Player, target: Entity, itemStack: ItemStack)
+
+    abstract fun onAnimation(player: Player, itemStack: ItemStack)
 
 }

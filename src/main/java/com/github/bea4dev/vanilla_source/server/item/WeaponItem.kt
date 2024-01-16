@@ -4,6 +4,7 @@ import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.Component
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.Player
+import net.minestom.server.entity.Player.Hand
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.particle.Particle
@@ -27,7 +28,7 @@ class WeaponItem(
     }
 
     @Suppress("UnstableApiUsage")
-    override fun onAttack(player: Player, target: Entity?, itemStack: ItemStack) {
+    override fun onEntityAttack(player: Player, target: Entity, itemStack: ItemStack) {
         player.playSound(this.attackSound)
         val position = player.position.add(0.0, player.eyeHeight, 0.0).add(player.position.direction().mul(1.5))
         val packet = ParticleCreator.createParticlePacket(
@@ -41,6 +42,10 @@ class WeaponItem(
             0
         )
         player.sendPacketToViewersAndSelf(packet)
+    }
+
+    override fun onAnimation(player: Player, itemStack: ItemStack) {
+        // None
     }
 
 

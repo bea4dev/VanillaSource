@@ -12,38 +12,27 @@ import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
 import com.github.bea4dev.vanilla_source.plugin.PluginManager
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
-import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
-import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityFollowGoal
 import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
-import com.github.bea4dev.vanilla_source.server.listener.registerEntityAttackListener
+import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
 import com.github.bea4dev.vanilla_source.test.TestZombie
 import com.github.bea4dev.vanilla_source.util.unwrap
-import net.kyori.adventure.text.Component
 import net.minestom.server.MinecraftServer
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
 import net.minestom.server.entity.fakeplayer.FakePlayer
-import net.minestom.server.entity.fakeplayer.FakePlayerOption
-import net.minestom.server.event.player.PlayerChatEvent
 import net.minestom.server.event.player.PlayerLoginEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
-import net.minestom.server.network.packet.server.play.PlayerInfoRemovePacket
-import net.minestom.server.network.packet.server.play.PlayerInfoUpdatePacket
 import net.minestom.server.thread.ThreadDispatcher
-import net.minestom.server.timer.Task
-import net.minestom.server.timer.TaskSchedule
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 
 @Suppress("UnstableApiUsage")
@@ -87,12 +76,10 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             EntityModelResource.createGlobalResource(entityModelConfig)
         }
 
-        // Freeze item registry
         ItemRegistry.init()
-        ItemRegistry.freezeRegistry()
 
         // Register events
-        registerEntityAttackListener()
+        registerItemListener()
 
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
@@ -136,6 +123,8 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
             // Load plugins
             pluginManager.onEnable()
+
+            freezeRegistries()
 
             // Load all levels
             val defaultLevelConfig = serverConfig.level.default
@@ -188,6 +177,10 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
             logger.info("Hello, Minecraft!")
         }
+    }
+
+    fun freezeRegistries() {
+        ItemRegistry.freezeRegistry()
     }
 
     private fun <T> task(task: () -> T) {
