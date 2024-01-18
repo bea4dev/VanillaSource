@@ -24,12 +24,6 @@ fun registerItemListener() {
     }
     MinecraftServer.getGlobalEventHandler().addListener(PlayerHandAnimationEvent::class.java) { event ->
         handlePlayerHandAnimation(event.player)
-
-        if (event.player.isSneaking) {
-            val entity = Entity(EntityType.ARMOR_STAND)
-            entity.setInstance(event.player.instance, event.player.position)
-            entity.spawn()
-        }
     }
 }
 
@@ -63,5 +57,16 @@ private fun handlePlayerAttack(player: Player, target: Entity) {
 
 
 private fun handlePlayerHandAnimation(player: Player) {
+    val itemStack = player.itemInMainHand
+    val item = itemStack.getItem()
 
+    if (item == null) {
+        val id = itemStack.getItemId()
+        if (id != null) {
+            logger.warn("Unknown item id '${itemStack.getItemId()}'!")
+        }
+        return
+    }
+
+    item.onAnimation(player, itemStack)
 }
