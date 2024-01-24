@@ -228,20 +228,20 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                     comboCount--
                 }
                 ATTACK_PRELIMINARY -> {
-                    damage(DamageType.fromPlayer(source), item.damage * 0.2F)
+                    damage(DamageType.PLAYER_ATTACK, item.damage * 0.2F)
                 }
                 GUARDED -> {
                     val sound = Sound.sound(SoundEvent.ENTITY_PLAYER_ATTACK_CRIT, Sound.Source.PLAYER, 0.8F, 1.0F)
                     val position = super.position
                     super.sendPacketToViewers(AdventurePacketConvertor.createSoundPacket(sound, position.x, position.y, position.z))
-                    damage(DamageType.fromPlayer(source), item.damage)
+                    damage(DamageType.PLAYER_ATTACK, item.damage)
                 }
                 COMBO_GUARDED -> {
-                    damage(DamageType.fromPlayer(source), item.damage * 0.2F)
+                    damage(DamageType.PLAYER_ATTACK, item.damage * 0.2F)
                 }
                 DEAD -> {/*None*/}
                 else -> {
-                    damage(DamageType.fromPlayer(source), item.damage / 8.0F)
+                    damage(DamageType.PLAYER_ATTACK, item.damage / 8.0F)
                     if (!isPlayingDieAnimation) {
                         this@EnemyModelEntity.launch(block = attackActions.guardAction)
                     }
@@ -385,7 +385,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
             if (direction1.angle(direction2) > maxAngle) {
                 continue
             }
-            entity.damage(DamageType.fromEntity(this), damage)
+            entity.damage(DamageType.MOB_ATTACK, damage)
             entity.velocity = direction1.mul(attackKnockBackStrength)
             if (entity is Player) {
                 entity.sendPacket(HitAnimationPacket(entity.entityId, Pos.ZERO.withDirection(direction1).yaw))

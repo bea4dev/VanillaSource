@@ -26,7 +26,7 @@ import net.minestom.server.MinecraftServer
 import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
 import net.minestom.server.entity.fakeplayer.FakePlayer
-import net.minestom.server.event.player.PlayerLoginEvent
+import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.instance.Instance
 import net.minestom.server.thread.ThreadDispatcher
@@ -91,7 +91,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             zombie.setNoGravity(false)
             //zombie.setInstance(player.instance, player.position)
         }
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerLoginEvent::class.java) { event ->
+        MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent::class.java) { event ->
             if (event.player is FakePlayer) {
                 return@addListener
             }
@@ -141,9 +141,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
             // Set default spawn position
             val globalEventHandler = MinecraftServer.getGlobalEventHandler()
-            globalEventHandler.addListener(PlayerLoginEvent::class.java) { event ->
+            globalEventHandler.addListener(AsyncPlayerConfigurationEvent::class.java) { event ->
                 val player: Player = event.player
-                event.setSpawningInstance(defaultLevel!!)
+                event.spawningInstance = defaultLevel!!
                 player.respawnPoint = defaultLevelConfig.spawnPosition.toPos()
                 // Set default game mode
                 val defaultGameMode = serverConfig.level.default.gameMode
