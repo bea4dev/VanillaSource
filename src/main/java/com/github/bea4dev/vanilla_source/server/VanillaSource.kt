@@ -27,7 +27,9 @@ import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
 import net.minestom.server.entity.fakeplayer.FakePlayer
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
+import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
+import net.minestom.server.event.trait.PlayerInstanceEvent
 import net.minestom.server.instance.Instance
 import net.minestom.server.thread.ThreadDispatcher
 import org.slf4j.LoggerFactory
@@ -91,7 +93,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             zombie.setNoGravity(false)
             //zombie.setInstance(player.instance, player.position)
         }
-        MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent::class.java) { event ->
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent::class.java) { event ->
             if (event.player is FakePlayer) {
                 return@addListener
             }

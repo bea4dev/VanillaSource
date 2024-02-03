@@ -61,7 +61,7 @@ pub extern "system" fn Java_com_github_bea4dev_vanilla_1source_natives_NativeBri
         env.get_int_array_region(original_array, palette_start_index as jsize, &mut buffer).unwrap();
 
         for i in 0..buffer.len() {
-            section.palette[i] = BlockState::from_raw(buffer[i] as u16).unwrap();
+            section.palette[i] = BlockState::from_raw(buffer[i] as u16).unwrap_or(BlockState::AIR);
         }
     }
     world.register_chunk(chunk);
