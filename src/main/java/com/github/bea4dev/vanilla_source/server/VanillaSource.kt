@@ -30,6 +30,7 @@ import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.event.player.PlayerStartSneakingEvent
 import net.minestom.server.event.trait.PlayerInstanceEvent
+import net.minestom.server.extras.MojangAuth
 import net.minestom.server.instance.Instance
 import net.minestom.server.thread.ThreadDispatcher
 import org.slf4j.LoggerFactory
@@ -167,6 +168,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
             // Register commands
             Commands.register()
+
+            // enable mojang auth
+            MojangAuth.init()
 
             // Runs the garbage collector before starting.
             System.gc()
