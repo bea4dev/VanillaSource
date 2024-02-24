@@ -78,8 +78,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             EntityModelResource.createGlobalResource(entityModelConfig)
         }
 
-        ItemRegistry.init()
-
         // Register events
         registerItemListener()
 
@@ -99,7 +97,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             }
             event.player.permissionLevel = 2
             val item = ItemRegistry.INSTANCE["pipe"]!!
-            event.player.inventory.addItemStack(item.createItemStack().withMeta { builder -> builder.customModelData(1) })
+            event.player.inventory.addItemStack(item.createItemStack())
         }
 
         // Register player object provider

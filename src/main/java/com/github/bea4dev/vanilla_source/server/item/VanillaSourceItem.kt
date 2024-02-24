@@ -20,6 +20,7 @@ fun ItemStack.getItemId(): String? {
 abstract class VanillaSourceItem(
     val id: String,
     val material: Material,
+    val customModelData: Int,
     val displayName: Component?,
     val lore: List<Component>?
 ) {
@@ -52,6 +53,8 @@ abstract class VanillaSourceItem(
             if (lore != null) {
                 builder.lore(lore)
             }
+
+            builder.customModelData(customModelData)
 
             builder.setTag(idTag, this.id)
         }

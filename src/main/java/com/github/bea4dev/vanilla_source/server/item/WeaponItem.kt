@@ -14,6 +14,7 @@ import net.minestom.server.sound.SoundEvent
 class WeaponItem(
     id: String,
     material: Material,
+    customModelData: Int,
     displayName: Component?,
     lore: List<Component>?,
     val isMelee: Boolean,
@@ -22,7 +23,7 @@ class WeaponItem(
     private val attackSound: Sound = Sound.sound(SoundEvent.ENTITY_PLAYER_ATTACK_SWEEP, Sound.Source.PLAYER, 0.4F, 0.4F),
     private val attackParticle: Particle = Particle.SWEEP_ATTACK,
     val guardSound: Sound = Sound.sound(SoundEvent.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, Sound.Source.PLAYER, 0.7F, 1.5F)
-) : VanillaSourceItem(id, material, displayName, lore) {
+) : VanillaSourceItem(id, material, customModelData, displayName, lore) {
     override fun createBaseItemStack(): ItemStack {
         return ItemStack.of(material)
     }
