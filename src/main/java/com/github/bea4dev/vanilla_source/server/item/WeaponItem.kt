@@ -4,14 +4,13 @@ import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.Component
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.Player
-import net.minestom.server.entity.Player.Hand
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.particle.Particle
 import net.minestom.server.particle.ParticleCreator
 import net.minestom.server.sound.SoundEvent
 
-class WeaponItem(
+abstract class WeaponItem(
     id: String,
     material: Material,
     customModelData: Int,
@@ -19,7 +18,6 @@ class WeaponItem(
     lore: List<Component>?,
     val isMelee: Boolean,
     val damage: Float,
-    val reach: Double,
     private val attackSound: Sound = Sound.sound(SoundEvent.ENTITY_PLAYER_ATTACK_SWEEP, Sound.Source.PLAYER, 0.4F, 0.4F),
     private val attackParticle: Particle = Particle.SWEEP_ATTACK,
     val guardSound: Sound = Sound.sound(SoundEvent.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, Sound.Source.PLAYER, 0.7F, 1.5F)
@@ -44,10 +42,5 @@ class WeaponItem(
         )
         player.sendPacketToViewersAndSelf(packet)
     }
-
-    override fun onAnimation(player: Player, itemStack: ItemStack) {
-        // None
-    }
-
 
 }

@@ -1,8 +1,11 @@
 package com.github.bea4dev.vanilla_source.server.item
 
 import net.kyori.adventure.text.Component
+import net.minestom.server.coordinate.Point
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.Player
+import net.minestom.server.instance.block.Block
+import net.minestom.server.instance.block.BlockFace
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.tag.Tag
@@ -65,5 +68,11 @@ abstract class VanillaSourceItem(
     abstract fun onEntityAttack(player: Player, target: Entity, itemStack: ItemStack)
 
     abstract fun onAnimation(player: Player, itemStack: ItemStack)
+
+    abstract fun onRightClick(player: Player, itemStack: ItemStack)
+
+    abstract fun onRightClickEntity(player: Player, entity: Entity, point: Point, itemStack: ItemStack)
+
+    abstract fun onRightClickBlock(player: Player, block: Block, blockPosition: Point, cursorPosition: Point, blockFace: BlockFace, itemStack: ItemStack)
 
 }
