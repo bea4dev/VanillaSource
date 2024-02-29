@@ -25,18 +25,16 @@ class Level {
         }
 
         @JvmStatic
-        fun register(name: String, level: Instance) {
-            levelMap[name] = level
-        }
-
-        @JvmStatic
-        fun unregister(name: String) {
-            levelMap.remove(name)
-        }
-
-        @JvmStatic
         fun levels(): Collection<Instance> {
             return levelMap.values
+        }
+
+        @JvmStatic
+        @Synchronized
+        fun unloadLevel(name: String) {
+            val level = levelMap[name] ?: return
+            MinecraftServer.getInstanceManager().unregisterInstance(level)
+            levelMap.remove(name)
         }
 
         @JvmStatic
@@ -107,7 +105,7 @@ class Level {
                 }
             }
 
-            register(levelConfig.name, level)
+            levelMap[levelConfig.name] = level
 
             return Ok(level)
         }

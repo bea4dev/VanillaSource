@@ -13,23 +13,18 @@ import com.github.bea4dev.vanilla_source.plugin.PluginManager
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
-import com.github.bea4dev.vanilla_source.server.entity.ai.goal.EntityTargetAttackGoal
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
-import com.github.bea4dev.vanilla_source.test.TestZombie
-import com.github.bea4dev.vanilla_source.util.unwrap
+import com.github.michaelbull.result.unwrap
 import net.minestom.server.MinecraftServer
-import net.minestom.server.attribute.Attribute
 import net.minestom.server.entity.*
 import net.minestom.server.entity.fakeplayer.FakePlayer
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
-import net.minestom.server.event.player.PlayerStartSneakingEvent
-import net.minestom.server.event.trait.PlayerInstanceEvent
 import net.minestom.server.extras.MojangAuth
 import net.minestom.server.instance.Instance
 import net.minestom.server.thread.ThreadDispatcher
@@ -41,7 +36,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("UnstableApiUsage")
 class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
     private val minecraftServer: MinecraftServer = MinecraftServer.initWithCustomDispatcher(
-        ThreadDispatcher.of(LevelChunkThreadProvider(serverConfig.settings.maxWorldTickThreads), serverConfig.settings.maxWorldTickThreads))
+        ThreadDispatcher.of(
+            LevelChunkThreadProvider(serverConfig.settings.maxWorldTickThreads),
+            serverConfig.settings.maxWorldTickThreads
+        )
+    )
 
     val nativeManager = NativeManager()
     val logger = LoggerFactory.getLogger("VanillaSource")!!
@@ -82,6 +81,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         // Register events
         registerItemListener()
 
+        /*
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->
             val player = event.player
 
@@ -91,14 +91,12 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             zombie.aiController.goalSelector.goals += EntityTargetAttackGoal(zombie, player, 2.5, 5)
             zombie.setNoGravity(false)
             //zombie.setInstance(player.instance, player.position)
-        }
+        }*/
         MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent::class.java) { event ->
             if (event.player is FakePlayer) {
                 return@addListener
             }
             event.player.permissionLevel = 2
-            val item = ItemRegistry.INSTANCE["pipe"]!!
-            event.player.inventory.addItemStack(item.createItemStack())
         }
 
         // Register player object provider
@@ -129,16 +127,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
             // Load all levels
             val defaultLevelConfig = serverConfig.level.default
-            for (levelConfig in serverConfig.level.levels) {
-                logger.info("Loading level '${levelConfig.name}'...")
-                val level = Level.load(levelConfig).unwrap()
-                if (levelConfig.name == defaultLevelConfig.name) {
-                    defaultLevel = level
-                }
-            }
-            if (defaultLevel == null) {
-                throw Exception("Level '${defaultLevelConfig.name}' is not found!")
-            }
+            defaultLevel = Level.load(defaultLevelConfig.name).unwrap()
 
             // Set default spawn position
             val globalEventHandler = MinecraftServer.getGlobalEventHandler()
@@ -183,7 +172,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         }
     }
 
-    fun freezeRegistries() {
+    private fun freezeRegistries() {
         ItemRegistry.freezeRegistry()
     }
 
