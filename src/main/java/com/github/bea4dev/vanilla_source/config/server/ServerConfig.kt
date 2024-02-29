@@ -19,8 +19,15 @@ data class ServerConfig(
                 ServerSettings(false, 4, 4, 12, 8),
                 LevelConfigs(
                     DefaultLevel("debug", "CREATIVE", Position(0.0, 66.0, 0.0, null, null)),
-                    listOf(LevelConfig("debug", null, "debug", "overworld", false)),
-                ),
+                    listOf(LevelConfig(
+                        "debug",
+                        null,
+                        "debug",
+                        "overworld",
+                        false,
+                        "level_entities/debug_level_entities.toml"
+                    ))
+                )
             )
         }
 
@@ -61,4 +68,5 @@ data class LevelConfig(
     val generator: String?,
     val dimensionType: String,
     val save: Boolean,
+    val entities: String
 )

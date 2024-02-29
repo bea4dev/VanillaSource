@@ -11,6 +11,10 @@ entity_view_distance = 8
 
 [level]
 default = { name = "debug", game_mode = "CREATIVE", spawn_position = { x = 0.0, y = 66.0, z = 0.0 } }
-levels = [
-    { name = "debug", generator = "debug", dimension_type = "minecraft:overworld", save = false }
-]
+
+[[level.levels]]
+name = "debug"
+generator = "debug"
+dimension_type = "minecraft:overworld"
+save = false
+entities = "level_entities/debug_level_entities.toml"

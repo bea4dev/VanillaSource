@@ -14,8 +14,10 @@ import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
+import com.github.bea4dev.vanilla_source.server.level.DebugLevelEntityType
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
+import com.github.bea4dev.vanilla_source.server.level.LevelEntityTypeRegistry
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
@@ -101,6 +103,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
         // Register player object provider
         MinecraftServer.getConnectionManager().setPlayerProvider(VanillaSourcePlayerProvider())
+
+        // Register debug level entity
+        LevelEntityTypeRegistry.INSTANCE["debug_entity"] = DebugLevelEntityType()
     }
 
     @Suppress("DEPRECATION")
@@ -122,8 +127,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
             // Load plugins
             pluginManager.onEnable()
-
-            freezeRegistries()
 
             // Load all levels
             val defaultLevelConfig = serverConfig.level.default
@@ -161,6 +164,8 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             // enable mojang auth
             MojangAuth.init()
 
+            freezeRegistries()
+
             // Runs the garbage collector before starting.
             System.gc()
 
@@ -174,6 +179,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
     private fun freezeRegistries() {
         ItemRegistry.freezeRegistry()
+        LevelEntityTypeRegistry.freezeRegistry()
     }
 
     private fun <T> task(task: () -> T) {

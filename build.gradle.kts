@@ -57,6 +57,9 @@ dependencies {
 
     // Misc
     implementation("com.google.guava:guava:33.0.0-jre")
+
+    // Toml
+    implementation("com.moandjiezana.toml:toml4j:0.7.2")
 }
 
 tasks.test {
