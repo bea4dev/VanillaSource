@@ -17,4 +17,4 @@ name = "debug"
 generator = "debug"
 dimension_type = "minecraft:overworld"
 save = false
-entities = "level_entities/debug_level_entities.toml"
+entities = "level_entities/debug_level_entities.yml"

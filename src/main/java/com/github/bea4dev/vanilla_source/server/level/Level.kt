@@ -3,22 +3,55 @@ package com.github.bea4dev.vanilla_source.server.level
 import com.github.bea4dev.vanilla_source.Resources
 import com.github.bea4dev.vanilla_source.config.server.LevelConfig
 import com.github.bea4dev.vanilla_source.server.VanillaSource
+import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegistry
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.util.asPosition
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import com.moandjiezana.toml.Toml
 import net.minestom.server.MinecraftServer
 import net.minestom.server.event.instance.InstanceChunkUnloadEvent
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.Instance
 import net.minestom.server.utils.NamespaceID
 import net.minestom.server.utils.chunk.ChunkSupplier
+import org.yaml.snakeyaml.Yaml
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileWriter
+import java.util.WeakHashMap
 
 class Level {
     companion object {
+
+        private var levelNameMap = WeakHashMap<Instance, String>()
+        private val levelEntitySettings = mutableMapOf<String, Pair<File, Map<String, Any>>>()
+
+        @Synchronized
+        private fun setLevelName(level: Instance, name: String) {
+            // copy on write
+            val clone = WeakHashMap(levelNameMap)
+            clone[level] = name
+            levelNameMap = clone
+        }
+
+        @Synchronized
+        private fun getLevelEntitySettings(levelName: String): Pair<File, Map<String, Any>>? {
+            val value = levelEntitySettings[levelName]
+            return value?.let { Pair(it.first, (it.second)) }
+        }
+
+        @Synchronized
+        private fun setLevelEntitySettings(levelName: String, settings: Pair<File, Map<String, Any>>) {
+            levelEntitySettings[levelName] = settings
+        }
+
+        private fun saveLevelEntitySettings(levelName: String) {
+            val settings = getLevelEntitySettings(levelName)
+            settings?.let {
+                FileWriter(it.first).use { writer -> Yaml().dump(settings.second, writer) }
+            }
+        }
 
         @JvmStatic
         fun load(name: String): Result<Instance, String> {
@@ -90,27 +123,29 @@ class Level {
 
             val levelEntityConfigFile = File(levelConfig.entities)
             if (!levelEntityConfigFile.exists()) {
-                if (levelConfig.entities == "level_entities/debug_level_entities.toml") {
+                if (levelConfig.entities == "level_entities/debug_level_entities.yml") {
                     // if default file
                     File("level_entities").mkdir()
-                    Resources.saveResource("level_entities/debug_level_entities.toml", false)
+                    Resources.saveResource("level_entities/debug_level_entities.yml", false)
                 } else {
                     return Err("Level entity settings '${levelConfig.entities}' is not found!")
                 }
             }
 
-            val levelEntityMap = Toml().read(levelEntityConfigFile)
-            for (entityName in levelEntityMap.toMap().keys) {
-                val entityTable = levelEntityMap.getTable(entityName)
-                val settings = entityTable.toMap()
+            val levelEntityMap: Map<String, Any> = Yaml().load(FileInputStream(levelEntityConfigFile))
+            @Suppress("UNCHECKED_CAST")
+            for (entry in levelEntityMap.entries) {
+                val entityName = entry.key
+                val settings = entry.value as Map<String, Any>
                 val typeName = settings["type"]!! as String
-                val position = entityTable.getTable("settings")?.asPosition()
+                val position = settings["position"]?.let { it as Map<String, Any> }?.asPosition()
 
                 val levelEntity = LevelEntityTypeRegistry.INSTANCE[typeName]
                     ?: return Err("Level entity '$typeName' is not found!")
 
                 levelEntity.createEntity(entityName, levelConfig.name, level, position, settings)
             }
+            setLevelEntitySettings(levelConfig.name, Pair(levelEntityConfigFile, levelEntityMap))
 
             return Ok(level)
         }

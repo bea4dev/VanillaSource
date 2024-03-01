@@ -14,10 +14,10 @@ import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
-import com.github.bea4dev.vanilla_source.server.level.DebugLevelEntityType
+import com.github.bea4dev.vanilla_source.server.level.entity.DebugLevelEntityType
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
-import com.github.bea4dev.vanilla_source.server.level.LevelEntityTypeRegistry
+import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegistry
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider

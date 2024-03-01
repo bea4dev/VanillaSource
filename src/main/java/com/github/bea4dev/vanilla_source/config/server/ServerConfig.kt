@@ -25,7 +25,7 @@ data class ServerConfig(
                         "debug",
                         "overworld",
                         false,
-                        "level_entities/debug_level_entities.toml"
+                        "level_entities/debug_level_entities.yml"
                     ))
                 )
             )

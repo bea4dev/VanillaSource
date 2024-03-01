@@ -1,4 +1,4 @@
-package com.github.bea4dev.vanilla_source.server.level
+package com.github.bea4dev.vanilla_source.server.level.entity
 
 import com.github.bea4dev.vanilla_source.resource.FreezableResource
 

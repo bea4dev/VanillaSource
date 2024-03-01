@@ -1,4 +1,4 @@
-package com.github.bea4dev.vanilla_source.server.level
+package com.github.bea4dev.vanilla_source.server.level.entity
 
 import net.minestom.server.MinecraftServer
 import net.minestom.server.coordinate.Pos

@@ -9,6 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.util.*
 import java.util.stream.Collectors
 import kotlin.collections.ArrayList
+import kotlin.io.path.extension
 
 class PluginManager {
     private val plugins = ArrayList<VanillaSourcePlugin>()
@@ -47,7 +48,7 @@ class PluginManager {
                     Int.MAX_VALUE,
                     object : SimpleFileVisitor<Path>() {
                         override fun visitFile(file: Path?, attrs: BasicFileAttributes?): FileVisitResult {
-                            if (file != null) {
+                            if (file != null && file.extension == "jar") {
                                 files.add(file)
                             }
                             return FileVisitResult.CONTINUE

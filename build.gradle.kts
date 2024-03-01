@@ -60,6 +60,10 @@ dependencies {
 
     // Toml
     implementation("com.moandjiezana.toml:toml4j:0.7.2")
+
+    // Yaml
+    implementation("org.yaml:snakeyaml:2.2")
+
 }
 
 tasks.test {
