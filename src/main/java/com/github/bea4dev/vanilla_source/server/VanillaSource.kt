@@ -6,7 +6,6 @@ import com.github.bea4dev.vanilla_source.commands.Commands
 import com.github.bea4dev.vanilla_source.config.TomlConfig
 import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
-import com.github.bea4dev.vanilla_source.lang.LanguageText
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.natives.NativeManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
@@ -175,7 +174,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             this.minecraftServer.start(address.ip, address.port)
 
             logger.info("Hello, Minecraft!")
-            logger.info(LanguageText.getText("ja_JP", "debug.message"))
         }
     }
 
