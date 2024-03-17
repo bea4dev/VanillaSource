@@ -13,13 +13,14 @@ import net.minestom.server.MinecraftServer
 import net.minestom.server.event.instance.InstanceChunkUnloadEvent
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.Instance
+import net.minestom.server.instance.LightingChunk
 import net.minestom.server.utils.NamespaceID
 import net.minestom.server.utils.chunk.ChunkSupplier
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileWriter
-import java.util.WeakHashMap
+import java.util.*
 
 class Level {
     companion object {
@@ -88,9 +89,10 @@ class Level {
                     ?: return Err("[${levelConfig.name}] Generator '${generatorName}' is not found!")
                 level.setGenerator(generator)
 
+                /*
                 if (generator is ChunkSupplier) {
                     level.chunkSupplier = generator
-                }
+                }*/
             } else {
                 level.chunkLoader = AnvilLoader(pathStr)
 
@@ -101,6 +103,15 @@ class Level {
                     level.setGenerator(generator)
                 }
             }
+
+            level.chunkSupplier =
+                ChunkSupplier { instance: Instance, chunkX: Int, chunkZ: Int ->
+                    LightingChunk(
+                        instance,
+                        chunkX,
+                        chunkZ
+                    )
+                }
 
             if (levelConfig.save) {
                 if (pathStr == null) {
