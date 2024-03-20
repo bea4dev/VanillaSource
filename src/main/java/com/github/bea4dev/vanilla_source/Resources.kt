@@ -1,5 +1,6 @@
 package com.github.bea4dev.vanilla_source
 
+import com.github.bea4dev.vanilla_source.plugin.VanillaSourcePlugin
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -14,13 +15,12 @@ class Resources {
     companion object {
 
         @JvmStatic
-        fun saveResource(path: String, replace: Boolean): Result<Unit, Throwable> {
+        fun saveResource(path: String, replace: Boolean, loader: ClassLoader): Result<Unit, Throwable> {
             val outputFile = File(path)
             if (!replace && outputFile.exists()) {
                 return Ok(Unit)
             }
 
-            val loader = ClassLoader.getSystemClassLoader()
             val url = loader.getResource(path) ?: return Err(NoSuchFileException(File(path)))
             val connection: URLConnection = url.openConnection()
             connection.useCaches = false
@@ -36,6 +36,20 @@ class Resources {
             } catch (err: Throwable) {
                 Err(err)
             }
+        }
+
+        @JvmStatic
+        fun saveResource(path: String, replace: Boolean): Result<Unit, Throwable> {
+            return saveResource(path, replace, ClassLoader.getSystemClassLoader())
+        }
+
+        @JvmStatic
+        fun <T: VanillaSourcePlugin> savePluginResource(
+            path: String,
+            replace: Boolean,
+            pluginClass: Class<T>
+        ): Result<Unit, Throwable> {
+            return saveResource(path, replace, pluginClass.classLoader)
         }
 
     }
