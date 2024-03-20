@@ -6,7 +6,7 @@ import java.util.*
 import java.util.function.Consumer
 import kotlin.collections.ArrayList
 
-class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: PlayerConnection) :
+open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: PlayerConnection) :
     Player(uuid, username, playerConnection) {
 
     private val tickTasks = ArrayList<Consumer<Long>>()
