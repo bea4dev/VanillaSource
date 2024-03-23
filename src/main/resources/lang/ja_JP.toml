@@ -1,2 +1,7 @@
 [debug]
 message = "デバッグメッセージ"
+
+[gui]
+next_page = "次のページ"
+prev_page = "前のページ"
+back = "戻る"

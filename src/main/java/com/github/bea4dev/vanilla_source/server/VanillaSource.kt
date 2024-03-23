@@ -6,6 +6,7 @@ import com.github.bea4dev.vanilla_source.commands.Commands
 import com.github.bea4dev.vanilla_source.config.TomlConfig
 import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
+import com.github.bea4dev.vanilla_source.lang.LanguageText
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.natives.NativeManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
@@ -21,6 +22,7 @@ import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegi
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
+import com.github.bea4dev.vanilla_source.server.player.registerPlayerEventListener
 import com.github.michaelbull.result.unwrap
 import net.minestom.server.MinecraftServer
 import net.minestom.server.entity.*
@@ -104,8 +106,14 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         // Register player object provider
         MinecraftServer.getConnectionManager().setPlayerProvider(VanillaSourcePlayerProvider())
 
-        // Register debug level entity
+        // Register debug level entity type
         LevelEntityTypeRegistry.INSTANCE["debug_entity"] = DebugLevelEntityType()
+
+        registerEventListeners()
+    }
+
+    private fun registerEventListeners() {
+        registerPlayerEventListener()
     }
 
     @Suppress("DEPRECATION")
@@ -118,6 +126,9 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             // Log setting
             System.setOut(STDOutLogger(System.out))
             System.setErr(STDOutLogger(System.err))
+
+            // Load text
+            LanguageText.initialize()
 
             // Load native libs
             nativeManager.init()

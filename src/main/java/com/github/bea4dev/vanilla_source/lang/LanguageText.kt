@@ -2,7 +2,13 @@ package com.github.bea4dev.vanilla_source.lang
 
 import com.github.bea4dev.vanilla_source.Resources
 import com.moandjiezana.toml.Toml
+import net.kyori.adventure.key.Key
+import net.kyori.adventure.translation.GlobalTranslator
+import net.kyori.adventure.translation.TranslationRegistry
+import net.kyori.adventure.translation.Translator
 import java.io.File
+import java.text.MessageFormat
+import java.util.Locale
 
 object LanguageText {
     private val map: Map<String, Toml>
@@ -30,15 +36,43 @@ object LanguageText {
         this.map = map
     }
 
-    fun getText(lang: String, key: String): String {
-        val value = map[lang]?.let { toml -> getPathValue(toml, key.split(".")) }
-            ?: "$lang | $key : Unknown text!"
-        return value as String
+    fun initialize() {
+        val registry = TranslationRegistry.create(Key.key("vanilla_source", "translate"))
+        for (entry in map.entries) {
+            val lang = entry.key
+            val toml = entry.value
+            val locale = Translator.parseLocale(lang) ?: throw IllegalStateException("Unknown locale : $lang")
+            registerGlobalTranslator(registry, locale, toml, "")
+        }
+        GlobalTranslator.translator().addSource(registry)
     }
 
-    private fun getPathValue(toml: Toml, pathComponents: List<String>): Any? {
+    private fun registerGlobalTranslator(registry: TranslationRegistry, locale: Locale, toml: Any, key: String) {
+        if (toml is String) {
+            registry.register(key, locale, MessageFormat(toml))
+        }
+
+        val entries = when (toml) {
+            is Toml -> toml.toMap().entries
+            is Map<*, *> -> toml.entries
+            else -> return
+        }
+
+        val keyTemp = if (key.isEmpty()) { key } else { "$key." }
+        entries.forEach { entry -> registerGlobalTranslator(registry, locale, entry.value, keyTemp + entry.key) }
+    }
+
+    fun getText(lang: String, key: String): String {
+        return map[lang]?.let { toml -> getPathValue(toml, key) as? String } ?: "$lang | $key : Unknown text!"
+    }
+
+    fun getTextOrNull(lang: String, key: String): String? {
+        return map[lang]?.let { toml -> getPathValue(toml, key) as? String }
+    }
+
+    private fun getPathValue(toml: Toml, path: String): Any? {
         var current: Any? = toml
-        for (component in pathComponents) {
+        for (component in path.split(".")) {
             current = when (current) {
                 is Toml -> current.toMap()[component]
                 is Map<*, *> -> current[component]
