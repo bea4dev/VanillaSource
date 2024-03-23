@@ -2,14 +2,10 @@ package com.github.bea4dev.vanilla_source.server.player
 
 import com.github.bea4dev.vanilla_source.gui.inventory.*
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
-import net.kyori.adventure.translation.GlobalTranslator
-import net.kyori.adventure.translation.Translator
 import net.minestom.server.MinecraftServer
 import net.minestom.server.event.inventory.InventoryCloseEvent
 import net.minestom.server.event.player.PlayerChatEvent
-import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.inventory.InventoryType
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
@@ -40,7 +36,12 @@ fun playerInventoryListener() {
             G, G, G, G, G, G, G, P, N,
         ))
 
-        val gui = InventoryGUI(Component.text("test"), InventoryType.CHEST_6_ROW, frame)
+        val gui = InventoryGUI(
+            Component.translatable("debug.message").decoration(TextDecoration.ITALIC, false),
+            InventoryType.CHEST_6_ROW,
+            frame,
+            NONE_BUTTON
+        )
         for (i in 0 until 100) {
             gui.addButton(Button(
                 { _, _, _ -> ItemStack.builder(Material.STONE).amount(i).build() },

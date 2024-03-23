@@ -11,13 +11,15 @@ import net.minestom.server.inventory.click.ClickType
 import net.minestom.server.inventory.condition.InventoryConditionResult
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
+import java.util.BitSet
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class InventoryGUI(
     private val defaultGUIName: Component,
     private val defaultInventoryType: InventoryType,
-    private val defaultFrame: Frame
+    private val defaultFrame: Frame,
+    private val fillButton: Button?
 ) {
     private val pages = mutableListOf<InventoryGUIPage>()
     private val lock = ReentrantLock()
@@ -37,7 +39,14 @@ class InventoryGUI(
 
         lock.withLock {
             for (i in (pages.size + 1)..page) {
-                val inventoryGUIPage = InventoryGUIPage(this, defaultInventoryType, defaultGUIName, i, defaultFrame)
+                val inventoryGUIPage = InventoryGUIPage(
+                    this,
+                    defaultInventoryType,
+                    defaultGUIName,
+                    i,
+                    defaultFrame,
+                    fillButton
+                )
                 pages.add(inventoryGUIPage)
             }
             update()
@@ -119,22 +128,6 @@ class InventoryGUI(
         }
     }
 
-    fun fillButton(button: Button) {
-        lock.withLock {
-            for (page in pages) {
-                page.fillButton(button)
-            }
-        }
-    }
-
-    fun fillItemStack(itemStack: ItemStack) {
-        lock.withLock {
-            for (page in pages) {
-                page.fillItemStack(itemStack)
-            }
-        }
-    }
-
     private fun update() {
         lock.withLock {
             for (page in pages) {
@@ -178,15 +171,18 @@ class InventoryGUIPage(
     private val inventoryType: InventoryType,
     name: Component,
     private val page: Int,
-    frame: Frame
+    frame: Frame,
+    private val fillButton: Button?
 ) {
     val inventory = Inventory(inventoryType, name)
     private val buttons = mutableMapOf<Int, Button>()
+    private val filledSlot: BitSet = BitSet(inventoryType.size)
 
-    constructor(gui: InventoryGUI, inventoryType: InventoryType, name: String, page: Int, frame: Frame)
-            : this(gui, inventoryType, Component.text(name.replace("%page", page.toString())), page, frame)
+    constructor(gui: InventoryGUI, inventoryType: InventoryType, name: String, page: Int, frame: Frame, fillButton: Button)
+            : this(gui, inventoryType, Component.text(name.replace("%page", page.toString())), page, frame, fillButton)
 
     init {
+
         for (i in frame.buttons.indices) {
             val button = frame.buttons[i] ?: continue
             setButton(i, button)
@@ -197,11 +193,30 @@ class InventoryGUIPage(
             button.clickEvent.accept(player, clickType, condition, gui)
             condition.isCancel = true
         }
+
+        if (fillButton != null) {
+            for (i in 0 until inventoryType.size) {
+                fillSlot(i)
+            }
+        }
+    }
+
+    fun fillSlot(slot: Int) {
+        fillButton?.let {
+            val itemStack = inventory.getItemStack(slot)
+            val button = buttons[slot]
+
+            if (button == null && (itemStack.isAir || itemStack.amount() == 0)) {
+                setButton(slot, fillButton)
+                filledSlot[slot] = true
+            }
+        }
     }
 
     fun setButton(slot: Int, button: Button) {
         buttons[slot] = button
         inventory.setItemStack(slot, button.itemProvider.accept(gui, page, slot))
+        filledSlot[slot] = false
     }
 
     fun setItemStack(slot: Int, itemStack: ItemStack) {
@@ -216,9 +231,10 @@ class InventoryGUIPage(
             val slotButton = buttons[i]
             val itemStack = inventory.getItemStack(i)
 
-            if (slotButton == null && itemStack.isAir) {
+            if (filledSlot[i] || (slotButton == null && (itemStack.isAir || itemStack.amount() == 0))) {
                 setButton(i, button)
                 result = true
+                filledSlot[i] = false
                 break
             }
         }
@@ -227,23 +243,21 @@ class InventoryGUIPage(
     }
 
     fun addItemStack(itemStack: ItemStack): Boolean {
-        return inventory.addItemStack(itemStack)
-    }
+        var result = false
 
-    fun fillButton(button: Button) {
-        for (i in 0 until inventoryType.size) {
-            if (inventory.getItemStack(i).isAir) {
-                setButton(i, button)
+        for (i in 0 until inventoryType.size)  {
+            val slotButton = buttons[i]
+            val slotItemStack = inventory.getItemStack(i)
+
+            if (filledSlot[i] || (slotButton == null && (slotItemStack.isAir || slotItemStack.amount() == 0))) {
+                inventory.setItemStack(i, itemStack)
+                result = true
+                filledSlot[i] = false
+                break
             }
         }
-    }
 
-    fun fillItemStack(itemStack: ItemStack) {
-        for (i in 0 until inventoryType.size) {
-            if (inventory.getItemStack(i).isAir) {
-                setItemStack(i, itemStack)
-            }
-        }
+        return result
     }
 
     fun update() {
