@@ -307,6 +307,7 @@ val NEXT_PAGE_BUTTON = Button(
             ItemStack.builder(Material.ARROW)
                 .displayName(
                     Component.translatable("gui.next_page")
+                        .decoration(TextDecoration.UNDERLINED, true)
                         .decoration(TextDecoration.ITALIC, false)
                         .append(Component.text(" [${page + 1} / ${lastPage}]")
                             .decoration(TextDecoration.ITALIC, false)
@@ -325,14 +326,13 @@ val PREVIOUS_PAGE_BUTTON = Button(
     { gui, page, _ ->
         if (page > 1) {
             ItemStack.builder(Material.ARROW)
-                .meta { meta ->
-                    meta.displayName(Component.translatable("gui.prev_page")
+                .displayName(Component.translatable("gui.prev_page")
+                    .decoration(TextDecoration.UNDERLINED, true)
+                    .decoration(TextDecoration.ITALIC, false)
+                    .append(Component.text(" [${page - 1} / ${gui.lastPage()}]")
                         .decoration(TextDecoration.ITALIC, false)
-                        .append(Component.text(" [${page - 1} / ${gui.lastPage()}]")
-                            .decoration(TextDecoration.ITALIC, false)
-                            .color(NamedTextColor.GRAY))
-                    )
-                }
+                        .color(NamedTextColor.GRAY))
+                )
                 .build()
         } else {
             NONE_ITEM
@@ -342,3 +342,31 @@ val PREVIOUS_PAGE_BUTTON = Button(
     true
 )
 
+val BACK_BUTTON = Button(
+    { _, _, _ ->
+        ItemStack.builder(Material.OAK_DOOR)
+            .displayName(
+                Component.translatable("gui.back")
+                    .decoration(TextDecoration.UNDERLINED, true)
+                    .decoration(TextDecoration.ITALIC, false)
+            )
+            .build()
+    },
+    { player, _, _, _ -> (player as VanillaSourcePlayer).openPrevGUI() },
+    false
+)
+
+val CLOSE_BUTTON = Button(
+    { _, _, _ ->
+        ItemStack.builder(Material.BARRIER)
+            .displayName(
+                Component.translatable("gui.close")
+                    .color(NamedTextColor.RED)
+                    .decoration(TextDecoration.UNDERLINED, true)
+                    .decoration(TextDecoration.ITALIC, false)
+            )
+            .build()
+    },
+    { player, _, _, _ -> player.closeInventory() },
+    false
+)
