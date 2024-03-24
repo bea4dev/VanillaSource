@@ -41,6 +41,7 @@ class InventoryGUI(
             for (i in (pages.size + 1)..page) {
                 val inventoryGUIPage = InventoryGUIPage(
                     this,
+                    lock,
                     defaultInventoryType,
                     defaultGUIName,
                     i,
@@ -111,7 +112,7 @@ class InventoryGUI(
 
     fun addItemStack(itemStack: ItemStack) {
         lock.withLock {
-            var page = 0
+            var page = 1
             while (true) {
                 if (page > pages.size) {
                     addPage()
@@ -128,7 +129,7 @@ class InventoryGUI(
         }
     }
 
-    private fun update() {
+    fun update() {
         lock.withLock {
             for (page in pages) {
                 page.update()
@@ -168,6 +169,7 @@ class InventoryGUI(
 
 class InventoryGUIPage(
     private val gui: InventoryGUI,
+    private val lock: ReentrantLock,
     private val inventoryType: InventoryType,
     name: Component,
     private val page: Int,
@@ -178,8 +180,8 @@ class InventoryGUIPage(
     private val buttons = mutableMapOf<Int, Button>()
     private val filledSlot: BitSet = BitSet(inventoryType.size)
 
-    constructor(gui: InventoryGUI, inventoryType: InventoryType, name: String, page: Int, frame: Frame, fillButton: Button)
-            : this(gui, inventoryType, Component.text(name.replace("%page", page.toString())), page, frame, fillButton)
+    constructor(gui: InventoryGUI, lock: ReentrantLock, inventoryType: InventoryType, name: String, page: Int, frame: Frame, fillButton: Button)
+            : this(gui, lock, inventoryType, Component.text(name.replace("%page", page.toString())), page, frame, fillButton)
 
     init {
 
@@ -189,9 +191,11 @@ class InventoryGUIPage(
         }
 
         inventory.addInventoryCondition { player, i, clickType, condition ->
-            val button = buttons[i] ?: return@addInventoryCondition
-            button.clickEvent.accept(player, clickType, condition, gui)
-            condition.isCancel = true
+            lock.withLock {
+                val button = buttons[i] ?: return@addInventoryCondition
+                button.clickEvent.accept(player, clickType, condition, gui)
+                condition.isCancel = true
+            }
         }
 
         if (fillButton != null) {

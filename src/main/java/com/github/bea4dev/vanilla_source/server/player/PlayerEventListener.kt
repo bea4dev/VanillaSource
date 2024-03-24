@@ -9,6 +9,7 @@ import net.minestom.server.event.player.PlayerChatEvent
 import net.minestom.server.inventory.InventoryType
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
+import java.time.Duration
 
 fun registerPlayerEventListener() {
     playerInventoryListener()
@@ -43,11 +44,17 @@ fun playerInventoryListener() {
             NONE_BUTTON
         )
         for (i in 0 until 100) {
+            var num = i
             gui.addButton(Button(
-                { _, _, _ -> ItemStack.builder(Material.STONE).amount(i).build() },
-                { player, _, _, _ -> player.sendMessage(i.toString()) },
-                false
+                { _, _, _ -> ItemStack.builder(Material.STONE).amount(num).build() },
+                { player, _, _, _ -> player.sendMessage(num.toString()) },
+                true
             ))
+
+            MinecraftServer.getSchedulerManager().buildTask {
+                num++
+                gui.update()
+            }.repeat(Duration.ofMillis(1000)).schedule()
         }
 
         gui.open(event.player)
