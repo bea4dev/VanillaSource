@@ -62,12 +62,14 @@ object LanguageText {
         entries.forEach { entry -> registerGlobalTranslator(registry, locale, entry.value, keyTemp + entry.key) }
     }
 
-    fun getText(lang: String, key: String): String {
-        return map[lang]?.let { toml -> getPathValue(toml, key) as? String } ?: "$lang | $key : Unknown text!"
+    fun getText(lang: String, key: String, vararg args: String): String {
+        val text = map[lang]?.let { toml -> getPathValue(toml, key) as? String } ?: "$lang | $key : Unknown text!"
+        return text.format(args)
     }
 
-    fun getTextOrNull(lang: String, key: String): String? {
-        return map[lang]?.let { toml -> getPathValue(toml, key) as? String }
+    fun getTextOrNull(lang: String, key: String, vararg args: String): String? {
+        val text = map[lang]?.let { toml -> getPathValue(toml, key) as? String }
+        return text?.format(args)
     }
 
     private fun getPathValue(toml: Toml, path: String): Any? {
