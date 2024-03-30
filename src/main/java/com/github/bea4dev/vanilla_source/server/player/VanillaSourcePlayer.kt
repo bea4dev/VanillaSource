@@ -8,6 +8,8 @@ import net.minestom.server.entity.Player
 import net.minestom.server.item.ItemStack
 import net.minestom.server.network.packet.server.SendablePacket
 import net.minestom.server.network.packet.server.play.OpenWindowPacket
+import net.minestom.server.network.packet.server.play.SetTitleSubTitlePacket
+import net.minestom.server.network.packet.server.play.SetTitleTextPacket
 import net.minestom.server.network.packet.server.play.SystemChatPacket
 import net.minestom.server.network.packet.server.play.WindowItemsPacket
 import net.minestom.server.network.player.PlayerConnection
@@ -137,6 +139,16 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
         if (packet is SystemChatPacket) {
             val translated = TranslateRenderer.render(packet.message, locale!!)
             return SystemChatPacket(translated, packet.overlay)
+        }
+
+        if (packet is SetTitleTextPacket) {
+            val translated = TranslateRenderer.render(packet.title, locale!!)
+            return SetTitleTextPacket(translated)
+        }
+
+        if (packet is SetTitleSubTitlePacket) {
+            val translated = TranslateRenderer.render(packet.subtitle, locale!!)
+            return SetTitleSubTitlePacket(translated)
         }
 
         return packet
