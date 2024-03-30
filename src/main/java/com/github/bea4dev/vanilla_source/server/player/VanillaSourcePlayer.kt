@@ -1,12 +1,14 @@
 package com.github.bea4dev.vanilla_source.server.player
 
 import com.github.bea4dev.vanilla_source.gui.inventory.InventoryGUI
+import com.github.bea4dev.vanilla_source.lang.TranslateRenderer
 import net.kyori.adventure.translation.GlobalTranslator
 import net.kyori.adventure.translation.Translator
 import net.minestom.server.entity.Player
 import net.minestom.server.item.ItemStack
 import net.minestom.server.network.packet.server.SendablePacket
 import net.minestom.server.network.packet.server.play.OpenWindowPacket
+import net.minestom.server.network.packet.server.play.SystemChatPacket
 import net.minestom.server.network.packet.server.play.WindowItemsPacket
 import net.minestom.server.network.player.PlayerConnection
 import java.util.*
@@ -100,7 +102,7 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
             for (i in packet.items.indices) {
                 val item = packet.items[i]
                 val displayName = item.displayName ?: continue
-                val translated = GlobalTranslator.render(displayName, locale!!)
+                val translated = TranslateRenderer.render(displayName, locale!!)
 
                 if (displayName != translated) {
                     items[i] = item.withDisplayName(translated)
@@ -125,11 +127,16 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
 
         if (packet is OpenWindowPacket) {
             val title = packet.title
-            val translated = GlobalTranslator.render(title, locale!!)
+            val translated = TranslateRenderer.render(title, locale!!)
 
             if (title != translated) {
                 return OpenWindowPacket(packet.windowId, packet.windowType, translated)
             }
+        }
+
+        if (packet is SystemChatPacket) {
+            val translated = TranslateRenderer.render(packet.message, locale!!)
+            return SystemChatPacket(translated, packet.overlay)
         }
 
         return packet
