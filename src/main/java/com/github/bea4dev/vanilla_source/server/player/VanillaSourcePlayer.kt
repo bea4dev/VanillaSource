@@ -8,9 +8,12 @@ import net.minestom.server.entity.Player
 import net.minestom.server.item.ItemStack
 import net.minestom.server.network.packet.server.SendablePacket
 import net.minestom.server.network.packet.server.play.OpenWindowPacket
+import net.minestom.server.network.packet.server.play.ScoreboardObjectivePacket
 import net.minestom.server.network.packet.server.play.SetTitleSubTitlePacket
 import net.minestom.server.network.packet.server.play.SetTitleTextPacket
 import net.minestom.server.network.packet.server.play.SystemChatPacket
+import net.minestom.server.network.packet.server.play.TeamsPacket
+import net.minestom.server.network.packet.server.play.UpdateScorePacket
 import net.minestom.server.network.packet.server.play.WindowItemsPacket
 import net.minestom.server.network.player.PlayerConnection
 import java.util.*
@@ -99,58 +102,6 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
     }
 
     private fun rewritePacket(packet: SendablePacket): SendablePacket {
-        if (packet is WindowItemsPacket) {
-            val items = mutableMapOf<Int, ItemStack>()
-            for (i in packet.items.indices) {
-                val item = packet.items[i]
-                val displayName = item.displayName ?: continue
-                val translated = TranslateRenderer.render(displayName, locale!!)
-
-                if (displayName != translated) {
-                    items[i] = item.withDisplayName(translated)
-                }
-            }
-
-            if (items.isNotEmpty()) {
-                val itemList = mutableListOf<ItemStack>()
-                for (i in packet.items.indices) {
-                    val original = packet.items[i]
-                    val new = items[i]
-                    if (new == null) {
-                        itemList.add(original)
-                    } else {
-                        itemList.add(new)
-                    }
-                }
-
-                return WindowItemsPacket(packet.windowId, packet.stateId, itemList, packet.carriedItem)
-            }
-        }
-
-        if (packet is OpenWindowPacket) {
-            val title = packet.title
-            val translated = TranslateRenderer.render(title, locale!!)
-
-            if (title != translated) {
-                return OpenWindowPacket(packet.windowId, packet.windowType, translated)
-            }
-        }
-
-        if (packet is SystemChatPacket) {
-            val translated = TranslateRenderer.render(packet.message, locale!!)
-            return SystemChatPacket(translated, packet.overlay)
-        }
-
-        if (packet is SetTitleTextPacket) {
-            val translated = TranslateRenderer.render(packet.title, locale!!)
-            return SetTitleTextPacket(translated)
-        }
-
-        if (packet is SetTitleSubTitlePacket) {
-            val translated = TranslateRenderer.render(packet.subtitle, locale!!)
-            return SetTitleSubTitlePacket(translated)
-        }
-
         return packet
     }
 

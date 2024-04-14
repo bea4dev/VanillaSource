@@ -7,6 +7,7 @@ import com.github.bea4dev.vanilla_source.config.TomlConfig
 import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.lang.LanguageText
+import com.github.bea4dev.vanilla_source.lang.TranslateRenderer
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.natives.NativeManager
 import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
@@ -15,17 +16,21 @@ import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
-import com.github.bea4dev.vanilla_source.server.level.entity.DebugLevelEntityType
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
+import com.github.bea4dev.vanilla_source.server.level.entity.DebugLevelEntityType
 import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegistry
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
 import com.github.bea4dev.vanilla_source.server.player.registerPlayerEventListener
 import com.github.michaelbull.result.unwrap
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.translation.GlobalTranslator
 import net.minestom.server.MinecraftServer
-import net.minestom.server.entity.*
+import net.minestom.server.adventure.MinestomAdventure
+import net.minestom.server.entity.GameMode
+import net.minestom.server.entity.Player
 import net.minestom.server.entity.fakeplayer.FakePlayer
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
@@ -34,7 +39,9 @@ import net.minestom.server.instance.Instance
 import net.minestom.server.thread.ThreadDispatcher
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.BiFunction
 
 
 @Suppress("UnstableApiUsage")
@@ -176,6 +183,12 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             MojangAuth.init()
 
             freezeRegistries()
+
+            // Enable translation
+            MinestomAdventure.AUTOMATIC_COMPONENT_TRANSLATION = true
+            MinestomAdventure.COMPONENT_TRANSLATOR = BiFunction { component: Component?, locale: Locale ->
+                component?.let { TranslateRenderer.render(component, locale) }
+            }
 
             // Runs the garbage collector before starting.
             System.gc()
