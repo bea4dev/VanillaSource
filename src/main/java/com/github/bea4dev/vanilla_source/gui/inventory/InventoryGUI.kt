@@ -193,7 +193,8 @@ class InventoryGUIPage(
         inventory.addInventoryCondition { player, i, clickType, condition ->
             lock.withLock {
                 val button = buttons[i] ?: return@addInventoryCondition
-                button.clickEvent.accept(player, clickType, condition, gui)
+                val info = ButtonClickEventInfo(player, clickType, condition, gui)
+                button.clickEvent.accept(info)
                 condition.isCancel = true
             }
         }
@@ -219,7 +220,8 @@ class InventoryGUIPage(
 
     fun setButton(slot: Int, button: Button) {
         buttons[slot] = button
-        inventory.setItemStack(slot, button.itemProvider.accept(gui, page, slot))
+        val info = ButtonItemInfo(gui, page, slot)
+        inventory.setItemStack(slot, button.itemProvider.accept(info))
         filledSlot[slot] = false
     }
 
@@ -269,7 +271,8 @@ class InventoryGUIPage(
             val slot = entry.key
             val button = entry.value
             if (button.updateItem) {
-                inventory.setItemStack(slot, button.itemProvider.accept(gui, page, slot))
+                val info = ButtonItemInfo(gui, page, slot)
+                inventory.setItemStack(slot, button.itemProvider.accept(info))
             }
         }
         inventory.update()
@@ -278,13 +281,23 @@ class InventoryGUIPage(
 
 @FunctionalInterface
 fun interface ButtonClickEvent {
-    fun accept(player: Player, clickType: ClickType, condition: InventoryConditionResult, gui: InventoryGUI)
+    fun accept(info: ButtonClickEventInfo)
 }
+
+data class ButtonClickEventInfo(
+    val player: Player,
+    val clickType: ClickType,
+    val condition: InventoryConditionResult,
+    val gui: InventoryGUI
+)
+
 
 @FunctionalInterface
 fun interface ButtonItemProvider {
-    fun accept(gui: InventoryGUI, page: Int, slot: Int): ItemStack
+    fun accept(info: ButtonItemInfo): ItemStack
 }
+
+data class ButtonItemInfo(val gui: InventoryGUI, val page: Int, val slot: Int)
 
 class Button(val itemProvider: ButtonItemProvider, val clickEvent: ButtonClickEvent, val updateItem: Boolean)
 
@@ -294,14 +307,12 @@ private val NONE_ITEM = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE)
     .meta { meta -> meta.displayName(Component.text("").color(NamedTextColor.GRAY)) }
     .build()
 
-val NONE_BUTTON = Button(
-    { _, _, _ -> NONE_ITEM },
-    { _, _, _, _ -> },
-    false
-)
+val NONE_BUTTON = Button({ _ -> NONE_ITEM }, { _ -> }, false)
 
 val NEXT_PAGE_BUTTON = Button(
-    { gui, page, _ ->
+    { info ->
+        val gui = info.gui
+        val page = info.page
         val lastPage = gui.lastPage()
         if (page < lastPage) {
             ItemStack.builder(Material.ARROW)
@@ -318,12 +329,14 @@ val NEXT_PAGE_BUTTON = Button(
             NONE_ITEM
         }
     },
-    { player, _, _, _ -> (player as VanillaSourcePlayer).openGUINextPage() },
+    { info -> (info.player as VanillaSourcePlayer).openGUINextPage() },
     true
 )
 
 val PREVIOUS_PAGE_BUTTON = Button(
-    { gui, page, _ ->
+    { info ->
+        val gui = info.gui
+        val page = info.page
         if (page > 1) {
             ItemStack.builder(Material.ARROW)
                 .displayName(Component.translatable("gui.prev_page")
@@ -338,12 +351,12 @@ val PREVIOUS_PAGE_BUTTON = Button(
             NONE_ITEM
         }
     },
-    { player, _, _, _ -> (player as VanillaSourcePlayer).openGUIPrevPage() },
+    { info -> (info.player as VanillaSourcePlayer).openGUIPrevPage() },
     true
 )
 
 val BACK_BUTTON = Button(
-    { _, _, _ ->
+    { _ ->
         ItemStack.builder(Material.OAK_DOOR)
             .displayName(
                 Component.translatable("gui.back")
@@ -352,12 +365,12 @@ val BACK_BUTTON = Button(
             )
             .build()
     },
-    { player, _, _, _ -> (player as VanillaSourcePlayer).openPrevGUI() },
+    { info -> (info.player as VanillaSourcePlayer).openPrevGUI() },
     false
 )
 
 val CLOSE_BUTTON = Button(
-    { _, _, _ ->
+    { _ ->
         ItemStack.builder(Material.BARRIER)
             .displayName(
                 Component.translatable("gui.close")
@@ -367,6 +380,6 @@ val CLOSE_BUTTON = Button(
             )
             .build()
     },
-    { player, _, _, _ -> player.closeInventory() },
+    { info -> info.player.closeInventory() },
     false
 )
