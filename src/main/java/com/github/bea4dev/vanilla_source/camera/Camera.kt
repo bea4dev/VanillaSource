@@ -7,6 +7,7 @@ import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.GameMode
 import net.minestom.server.network.packet.server.play.CameraPacket
 import net.minestom.server.network.packet.server.play.DestroyEntitiesPacket
+import net.minestom.server.network.packet.server.play.EntityTeleportPacket
 import java.util.concurrent.CompletableFuture
 
 class Camera(position: Pos): Entity(EntityType.BOAT) {
@@ -43,8 +44,15 @@ class Camera(position: Pos): Entity(EntityType.BOAT) {
         super.position = position
         this.setView(position.yaw(), position.pitch())
 
+        val teleportPacket = EntityTeleportPacket(super.getEntityId(), position, false)
+
         for (player in players) {
-            player.teleport(position)
+            synchronized(player) {
+                if (player.instance != null) {
+                    player.teleport(position)
+                }
+            }
+            player.sendPacket(teleportPacket)
         }
 
         return CompletableFuture.completedFuture(null)

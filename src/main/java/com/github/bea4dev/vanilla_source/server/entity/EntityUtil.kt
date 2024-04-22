@@ -45,6 +45,7 @@ fun Entity.move(velocity: Vec, autoJumpHeight: Double): PhysicsResult {
 @Suppress("UnstableApiUsage")
 val Entity.isOnGroundStrict: Boolean
     get() {
+        synchronized(this) { if (this.instance == null) { return false } }
         val result = CollisionUtils.handlePhysics(this, Vec(0.0, -Vec.EPSILON, 0.0))
         return result.isOnGround
     }
