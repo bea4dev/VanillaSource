@@ -1,20 +1,9 @@
 package com.github.bea4dev.vanilla_source.server.player
 
 import com.github.bea4dev.vanilla_source.gui.inventory.InventoryGUI
-import com.github.bea4dev.vanilla_source.lang.TranslateRenderer
-import net.kyori.adventure.translation.GlobalTranslator
 import net.kyori.adventure.translation.Translator
 import net.minestom.server.entity.Player
-import net.minestom.server.item.ItemStack
 import net.minestom.server.network.packet.server.SendablePacket
-import net.minestom.server.network.packet.server.play.OpenWindowPacket
-import net.minestom.server.network.packet.server.play.ScoreboardObjectivePacket
-import net.minestom.server.network.packet.server.play.SetTitleSubTitlePacket
-import net.minestom.server.network.packet.server.play.SetTitleTextPacket
-import net.minestom.server.network.packet.server.play.SystemChatPacket
-import net.minestom.server.network.packet.server.play.TeamsPacket
-import net.minestom.server.network.packet.server.play.UpdateScorePacket
-import net.minestom.server.network.packet.server.play.WindowItemsPacket
 import net.minestom.server.network.player.PlayerConnection
 import java.util.*
 import java.util.function.Consumer
