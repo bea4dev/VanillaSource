@@ -31,7 +31,7 @@ import net.minestom.server.MinecraftServer
 import net.minestom.server.adventure.MinestomAdventure
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
-import net.minestom.server.entity.fakeplayer.FakePlayer
+//import net.minestom.server.entity.fakeplayer.FakePlayer
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.extras.MojangAuth
@@ -74,6 +74,10 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
     init {
         MinecraftServer.setBrandName("VanillaSource")
         server = this
+
+        // Apply server settings
+        System.setProperty("minestom.chunk-view-distance", serverConfig.settings.chunkViewDistance.toString())
+        System.setProperty("minestom.entity-view-distance", serverConfig.settings.entityViewDistance.toString())
     }
 
     private fun registerTask() {
@@ -104,9 +108,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             //zombie.setInstance(player.instance, player.position)
         }*/
         MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent::class.java) { event ->
-            if (event.player is FakePlayer) {
-                return@addListener
-            }
             event.player.permissionLevel = 2
         }
 
@@ -163,10 +164,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
                     player.gameMode = gameMode
                 }
             }
-
-            // Apply server settings
-            MinecraftServer.setChunkViewDistance(serverConfig.settings.chunkViewDistance)
-            MinecraftServer.setEntityViewDistance(serverConfig.settings.entityViewDistance)
 
             // Start async pathfinder threads
             AsyncPathfinderThread.initialize(serverConfig.settings.asyncPathfindingThreads)

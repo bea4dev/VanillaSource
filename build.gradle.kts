@@ -5,9 +5,14 @@ plugins {
     id("java")
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("maven-publish")
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.20"
     kotlin("plugin.serialization") version "1.9.0"
     application
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 group = "com.github.bea4dev"
@@ -23,7 +28,7 @@ dependencies {
     testImplementation(kotlin("test"))
 
     // Minestom
-    implementation("com.github.bea4dev:minestom-ce:12b1e42abf")
+    implementation("com.github.bea4dev:Minestom:4e95c5d6a7")
 
     // Log
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
@@ -71,7 +76,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+    kotlinOptions.jvmTarget = "21"
 }
 
 application {

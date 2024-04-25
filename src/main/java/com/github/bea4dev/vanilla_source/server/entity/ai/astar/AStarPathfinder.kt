@@ -44,7 +44,7 @@ class AStarPathfinder(
                 completableFuture.complete(
                     runPathFinding()
                 )
-            }, ExecutionType.ASYNC)
+            }, ExecutionType.TICK_START)
             completableFuture
         }
         return future

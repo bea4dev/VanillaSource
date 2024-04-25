@@ -51,7 +51,7 @@ object TranslateRenderer: TranslatableComponentRenderer<Locale>() {
                 while (i < size) {
                     val arg = args[i]
                     if (arg!!.value() is Component) {
-                        args[i] = TranslationArgument.component(this.render((arg!!.value() as Component)!!, context))
+                        args[i] = TranslationArgument.component(this.render((arg.value() as Component), context))
                     }
                     ++i
                 }

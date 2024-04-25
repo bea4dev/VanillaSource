@@ -6,17 +6,13 @@ import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity.Attackin
 import com.github.bea4dev.vanilla_source.server.entity.ai.EntityAIController
 import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.item.WeaponItem
-import com.github.bea4dev.vanilla_source.util.math.createCube
-import com.github.bea4dev.vanilla_source.util.math.getEntitiesInBox
 import com.github.bea4dev.vanilla_source.util.math.normalizeDegrees
 import kotlinx.coroutines.*
 import net.kyori.adventure.sound.Sound
 import net.minestom.server.adventure.AdventurePacketConvertor
-import net.minestom.server.collision.BoundingBox
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.Entity
-import net.minestom.server.entity.EntityCreature
 import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.LivingEntity
 import net.minestom.server.entity.Player
@@ -24,8 +20,8 @@ import net.minestom.server.entity.damage.DamageType
 import net.minestom.server.entity.damage.EntityDamage
 import net.minestom.server.network.packet.server.SendablePacket
 import net.minestom.server.network.packet.server.play.HitAnimationPacket
+import net.minestom.server.network.packet.server.play.ParticlePacket
 import net.minestom.server.particle.Particle
-import net.minestom.server.particle.ParticleCreator
 import net.minestom.server.sound.SoundEvent
 import net.minestom.server.thread.TickThread
 import net.minestom.server.timer.TaskSchedule
@@ -128,8 +124,8 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
             val x = Random.nextDouble(size) - (size / 2.0)
             val y = Random.nextDouble(size) - (size / 2.0)
             val z = Random.nextDouble(size) - (size / 2.0)
-            val particle = ParticleCreator.createParticlePacket(
-                Particle.CRIT,
+            val particle = ParticlePacket(
+                Particle.CRIT.id(),
                 false,
                 position.x,
                 position.y,

@@ -9,7 +9,7 @@ import kotlin.coroutines.CoroutineContext
 
 class SchedulerDispatcher(private val entity: Entity) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
-        entity.scheduler().scheduleNextProcess(block, ExecutionType.SYNC)
+        entity.scheduler().scheduleNextProcess(block, ExecutionType.TICK_START)
     }
 
     override fun isDispatchNeeded(context: CoroutineContext): Boolean {

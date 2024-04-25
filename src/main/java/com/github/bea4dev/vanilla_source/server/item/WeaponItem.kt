@@ -6,8 +6,8 @@ import net.minestom.server.entity.Entity
 import net.minestom.server.entity.Player
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
+import net.minestom.server.network.packet.server.play.ParticlePacket
 import net.minestom.server.particle.Particle
-import net.minestom.server.particle.ParticleCreator
 import net.minestom.server.sound.SoundEvent
 
 abstract class WeaponItem(
@@ -30,15 +30,18 @@ abstract class WeaponItem(
     override fun onEntityAttack(player: Player, target: Entity, itemStack: ItemStack) {
         player.playSound(this.attackSound)
         val position = player.position.add(0.0, player.eyeHeight, 0.0).add(player.position.direction().mul(1.5))
-        val packet = ParticleCreator.createParticlePacket(
-            this.attackParticle,
+        val packet = ParticlePacket(
+            this.attackParticle.id(),
+            false,
             position.x,
             position.y,
             position.z,
             0.0F,
             0.0F,
             0.0F,
-            0
+            1.0F,
+            0,
+            null
         )
         player.sendPacketToViewersAndSelf(packet)
     }
