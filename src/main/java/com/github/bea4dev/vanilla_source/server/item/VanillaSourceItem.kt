@@ -63,7 +63,9 @@ abstract class VanillaSourceItem(
         }
     }
 
-    protected abstract fun createBaseItemStack(): ItemStack
+    protected open fun createBaseItemStack(): ItemStack {
+        return ItemStack.of(material)
+    }
 
     abstract fun onEntityAttack(player: Player, target: Entity, itemStack: ItemStack)
 
