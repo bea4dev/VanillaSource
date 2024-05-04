@@ -26,12 +26,10 @@ import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvid
 import com.github.bea4dev.vanilla_source.server.player.registerPlayerEventListener
 import com.github.michaelbull.result.unwrap
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.translation.GlobalTranslator
 import net.minestom.server.MinecraftServer
 import net.minestom.server.adventure.MinestomAdventure
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
-//import net.minestom.server.entity.fakeplayer.FakePlayer
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.extras.MojangAuth
@@ -74,10 +72,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
     init {
         MinecraftServer.setBrandName("VanillaSource")
         server = this
-
-        // Apply server settings
-        System.setProperty("minestom.chunk-view-distance", serverConfig.settings.chunkViewDistance.toString())
-        System.setProperty("minestom.entity-view-distance", serverConfig.settings.entityViewDistance.toString())
     }
 
     private fun registerTask() {

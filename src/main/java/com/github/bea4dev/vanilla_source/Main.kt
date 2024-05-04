@@ -16,6 +16,10 @@ fun main() {
     Resources.saveResource("server.toml", false)
     val serverConfig = TomlConfig.loadOrDefault<ServerConfig>(File("server.toml")).unwrap()
 
+    // Apply server settings
+    System.setProperty("minestom.chunk-view-distance", serverConfig.settings.chunkViewDistance.toString())
+    System.setProperty("minestom.entity-view-distance", serverConfig.settings.entityViewDistance.toString())
+
     // Start server
     VanillaSource(serverConfig, console).start()
 }
