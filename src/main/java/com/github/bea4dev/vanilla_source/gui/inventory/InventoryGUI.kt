@@ -16,6 +16,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class InventoryGUI(
+    private val id: String,
     private val defaultGUIName: Component,
     private val defaultInventoryType: InventoryType,
     private val defaultFrame: Frame,
@@ -152,7 +153,7 @@ class InventoryGUI(
                     history.push(Pair(this, page))
                 } else {
                     val last = history.peek()
-                    if (last.first == this) {
+                    if (last.first.id == this.id) {
                         history.pop()
                     }
                     history.push(Pair(this, page))
