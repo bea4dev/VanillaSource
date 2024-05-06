@@ -160,6 +160,7 @@ class InventoryGUI(
                 }
             }
         }
+        update()
     }
 
     fun lastPage(): Int {
