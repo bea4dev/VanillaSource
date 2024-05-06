@@ -18,9 +18,12 @@ import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderT
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
+import com.github.bea4dev.vanilla_source.server.level.block.DiggingHandler
+import com.github.bea4dev.vanilla_source.server.level.block.GLOBAL_DIGGING_HANDLER
 import com.github.bea4dev.vanilla_source.server.level.entity.DebugLevelEntityType
 import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegistry
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
+import com.github.bea4dev.vanilla_source.server.listener.registerBlockListener
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
 import com.github.bea4dev.vanilla_source.server.player.registerPlayerEventListener
@@ -28,12 +31,14 @@ import com.github.michaelbull.result.unwrap
 import net.kyori.adventure.text.Component
 import net.minestom.server.MinecraftServer
 import net.minestom.server.adventure.MinestomAdventure
+import net.minestom.server.coordinate.Point
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.extras.MojangAuth
 import net.minestom.server.instance.Instance
+import net.minestom.server.instance.block.Block
 import net.minestom.server.thread.ThreadDispatcher
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -89,6 +94,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
         // Register events
         registerItemListener()
+        registerBlockListener()
 
         /*
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->

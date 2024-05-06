@@ -2,12 +2,20 @@ package com.github.bea4dev.vanilla_source.server.player
 
 import com.github.bea4dev.vanilla_source.gui.inventory.InventoryGUI
 import net.kyori.adventure.translation.Translator
+import net.minestom.server.coordinate.Point
+import net.minestom.server.effects.Effects
 import net.minestom.server.entity.Player
+import net.minestom.server.instance.block.BlockFace
 import net.minestom.server.network.packet.server.SendablePacket
+import net.minestom.server.network.packet.server.play.BlockBreakAnimationPacket
+import net.minestom.server.network.packet.server.play.EffectPacket
 import net.minestom.server.network.player.PlayerConnection
+import net.minestom.server.potion.Potion
+import net.minestom.server.potion.PotionEffect
 import java.util.*
 import java.util.function.Consumer
 import kotlin.collections.ArrayList
+import kotlin.math.min
 
 @Suppress("UnstableApiUsage")
 open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: PlayerConnection) :
@@ -15,6 +23,10 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
 
     private val tickTasks = ArrayList<Consumer<Long>>()
     val guiHistory = Stack<Pair<InventoryGUI, Int>>()
+    private var diggingTick = 0
+    private var diggingTime = 0
+    private var diggingBlockFace = BlockFace.TOP
+    private var diggingBlock: Point? = null
 
     init {
         if (locale == null) {
@@ -27,6 +39,8 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
         for (tickTask in this.tickTasks) {
             tickTask.accept(time)
         }
+
+        processDiggingTick()
     }
 
     fun addTickTask(task: Consumer<Long>) {
@@ -92,6 +106,51 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
 
     private fun rewritePacket(packet: SendablePacket): SendablePacket {
         return packet
+    }
+
+    @Synchronized
+    fun processDiggingTick() {
+        val position = diggingBlock ?: return
+        if (diggingTick == diggingTime) {
+            val level = super.instance ?: return
+            val block = level.getBlock(position)
+
+            level.breakBlock(this, position, diggingBlockFace)
+            super.sendPacket(EffectPacket(Effects.BLOCK_BREAK.id, position, block.stateId().toInt(), false))
+
+            cancelDigging()
+            return
+        }
+
+        val stage = min((diggingTick.toDouble() / diggingTime.toDouble() * 10.0).toInt(), 9).toByte()
+        super.sendPacketToViewersAndSelf(BlockBreakAnimationPacket(-super.getEntityId(), position, stage))
+
+        if (diggingTick < diggingTime) {
+            diggingTick++
+        }
+    }
+
+    @Synchronized
+    fun startDigging(blockPosition: Point, time: Int) {
+        diggingTick = 0
+        diggingTime = time
+        diggingBlock = blockPosition
+        super.addEffect(Potion(PotionEffect.MINING_FATIGUE, -1, -1))
+    }
+
+    @Synchronized
+    fun cancelDigging() {
+        val position = diggingBlock
+        if (position != null) {
+            super.sendPacketToViewersAndSelf(BlockBreakAnimationPacket(-super.getEntityId(), position, -1))
+        }
+        diggingBlock = null
+        super.removeEffect(PotionEffect.MINING_FATIGUE)
+    }
+
+    @Synchronized
+    fun updateDiggingBlockFace(blockFace: BlockFace) {
+        diggingBlockFace = blockFace
     }
 
 }
