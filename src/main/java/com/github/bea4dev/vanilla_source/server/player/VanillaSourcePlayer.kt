@@ -1,21 +1,27 @@
 package com.github.bea4dev.vanilla_source.server.player
 
 import com.github.bea4dev.vanilla_source.gui.inventory.InventoryGUI
+import com.github.bea4dev.vanilla_source.server.entity.isOnGroundStrict
 import net.kyori.adventure.translation.Translator
 import net.minestom.server.coordinate.Point
+import net.minestom.server.coordinate.Pos
 import net.minestom.server.effects.Effects
+import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
+import net.minestom.server.entity.damage.DamageType
 import net.minestom.server.instance.block.BlockFace
 import net.minestom.server.network.packet.server.SendablePacket
 import net.minestom.server.network.packet.server.play.BlockBreakAnimationPacket
 import net.minestom.server.network.packet.server.play.EffectPacket
+import net.minestom.server.network.packet.server.play.HitAnimationPacket
 import net.minestom.server.network.player.PlayerConnection
 import net.minestom.server.potion.Potion
 import net.minestom.server.potion.PotionEffect
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import kotlin.collections.ArrayList
 import kotlin.math.min
+
 
 @Suppress("UnstableApiUsage")
 open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: PlayerConnection) :
@@ -27,6 +33,11 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
     private var diggingTime = 0
     private var diggingBlockFace = BlockFace.TOP
     private var diggingBlock: Point? = null
+    private var lastGroundPosition = super.position
+    private var isPreviousOnGround = this.isOnGroundStrict
+    var noFallDamageTick = 0
+    var fallDistance = 0.0
+    var noFallDamage = false
 
     init {
         if (locale == null) {
@@ -35,12 +46,74 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
     }
 
     override fun tick(time: Long) {
+        processFallDamage()
+
         super.tick(time)
         for (tickTask in this.tickTasks) {
             tickTask.accept(time)
         }
 
         processDiggingTick()
+
+        isPreviousOnGround = this.isOnGroundStrict
+        if (isPreviousOnGround) {
+            fallDistance = 0.0
+            lastGroundPosition = super.position
+        }
+
+        if (super.getGameMode() == GameMode.CREATIVE || super.getGameMode() == GameMode.SPECTATOR) {
+            fallDistance = 0.0
+        }
+    }
+
+    private fun processFallDamage() {
+        if (noFallDamageTick > 0) {
+            noFallDamageTick--
+            return
+        }
+
+        val tickFallDistance = super.previousPosition.y - super.position.y
+        if (tickFallDistance > 0.0) {
+            fallDistance += tickFallDistance
+        }
+
+        if (noFallDamage
+            || !super.onGround
+            || isPreviousOnGround
+            || super.getGameMode() == GameMode.CREATIVE
+            || super.getGameMode() == GameMode.SPECTATOR) {
+
+            return
+        }
+
+        val level = super.instance ?: return
+        val position = super.position
+        val blocks = listOf(
+            level.getBlock(position),
+            level.getBlock(position.add(0.0, 1.0, 0.0)),
+            level.getBlock(position.add(0.0, -1.0, 0.0))
+        )
+        val inFluid = blocks.stream().anyMatch { block -> block.registry().isLiquid }
+        if (inFluid) {
+            fallDistance = 0.0
+            return
+        }
+
+
+        if (fallDistance > 3.0) {
+            val effect = super.getEffect(PotionEffect.JUMP_BOOST)
+            val reduce = if (effect != null) {
+                effect.potion().amplifier() + 1
+            } else {
+                0
+            }
+            val damage = fallDistance.toFloat() - 3.5F - reduce.toFloat()
+            if (damage > 0.0) {
+                super.damage(DamageType.FALL, damage)
+                super.sendPacketsToViewers(HitAnimationPacket(super.getEntityId(), super.position.yaw))
+            }
+            fallDistance = 0.0
+        }
     }
 
     fun addTickTask(task: Consumer<Long>) {
@@ -151,6 +224,22 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
     @Synchronized
     fun updateDiggingBlockFace(blockFace: BlockFace) {
         diggingBlockFace = blockFace
+    }
+
+    override fun setGameMode(gameMode: GameMode): Boolean {
+        fallDistance = 0.0
+        return super.setGameMode(gameMode)
+    }
+
+    override fun teleport(position: Pos, chunks: LongArray?, flags: Int): CompletableFuture<Void> {
+        val completableFuture = CompletableFuture<Void>()
+        noFallDamageTick = Int.MAX_VALUE
+        super.teleport(position, chunks, flags).thenAccept {
+            fallDistance = 0.0
+            noFallDamageTick = 2
+            completableFuture.complete(null)
+        }
+        return completableFuture
     }
 
 }
