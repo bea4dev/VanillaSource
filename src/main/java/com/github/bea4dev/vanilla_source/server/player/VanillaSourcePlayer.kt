@@ -68,6 +68,7 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
 
     private fun processFallDamage() {
         if (noFallDamageTick > 0) {
+            fallDistance = 0.0
             noFallDamageTick--
             return
         }
