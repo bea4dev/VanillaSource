@@ -23,6 +23,7 @@ import com.github.bea4dev.vanilla_source.server.level.block.GLOBAL_DIGGING_HANDL
 import com.github.bea4dev.vanilla_source.server.level.entity.DebugLevelEntityType
 import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegistry
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
+import com.github.bea4dev.vanilla_source.server.level.registerDimensions
 import com.github.bea4dev.vanilla_source.server.listener.registerBlockListener
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
@@ -118,6 +119,8 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         LevelEntityTypeRegistry.INSTANCE["debug_entity"] = DebugLevelEntityType()
 
         registerEventListeners()
+
+        registerDimensions()
     }
 
     private fun registerEventListeners() {

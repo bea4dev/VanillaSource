@@ -69,6 +69,9 @@ dependencies {
     // Yaml
     implementation("org.yaml:snakeyaml:2.2")
 
+    // Noise
+    implementation("de.articdive:jnoise-pipeline:4.1.0")
+
 }
 
 tasks.test {

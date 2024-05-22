@@ -4,22 +4,22 @@ import com.github.bea4dev.vanilla_source.server.level.generator.debug.DebugGener
 import net.minestom.server.instance.generator.Generator
 import java.util.concurrent.ConcurrentHashMap
 
-class GeneratorRegistry {
-    companion object {
-        private val generatorMap = ConcurrentHashMap<String, Generator>()
+object GeneratorRegistry {
+    private val generatorMap = ConcurrentHashMap<String, Generator>()
 
-        fun init() {
-            register("debug", DebugGenerator())
-        }
+    fun init() {
+        register("debug", DebugGenerator())
+        register("void", VoidGenerator())
+        register("test", TestGenerator())
+    }
 
-        @JvmStatic
-        fun getGenerator(name: String): Generator? {
-            return generatorMap[name]
-        }
+    @JvmStatic
+    fun getGenerator(name: String): Generator? {
+        return generatorMap[name]
+    }
 
-        @JvmStatic
-        fun register(name: String, generator: Generator) {
-            generatorMap[name] = generator
-        }
+    @JvmStatic
+    fun register(name: String, generator: Generator) {
+        generatorMap[name] = generator
     }
 }

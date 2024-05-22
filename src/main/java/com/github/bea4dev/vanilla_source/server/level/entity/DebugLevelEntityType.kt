@@ -5,6 +5,7 @@ import net.minestom.server.coordinate.Pos
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.instance.Instance
 
+@Suppress("UnstableApiUsage")
 class DebugLevelEntityType: LevelEntityType {
     override fun createEntity(
         entityName: String,
@@ -16,6 +17,9 @@ class DebugLevelEntityType: LevelEntityType {
         val testString = settings["test_string"]!! as String
 
         MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent::class.java) { event ->
+            if (event.instance != level) {
+                return@addListener
+            }
             event.player.sendMessage(testString)
         }
     }
