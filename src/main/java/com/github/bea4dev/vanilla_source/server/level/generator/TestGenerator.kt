@@ -55,11 +55,6 @@ class TestGenerator: Generator {
             .temperature(0.0F)
             .build()
         MinecraftServer.getBiomeManager().addBiome(biome)
-
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent::class.java) { event ->
-            event.instance.weather = Weather.RAIN
-            event.instance.time = 6000
-        }
     }
 
     override fun generate(unit: GenerationUnit) {
