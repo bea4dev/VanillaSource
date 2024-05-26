@@ -28,7 +28,7 @@ dependencies {
     testImplementation(kotlin("test"))
 
     // Minestom
-    implementation("com.github.bea4dev:Minestom:46da6b5f20")
+    implementation("com.github.bea4dev:Minestom:8d252b29fd")
 
     // Log
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")

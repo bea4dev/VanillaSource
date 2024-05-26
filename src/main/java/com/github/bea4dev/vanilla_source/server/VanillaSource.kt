@@ -25,6 +25,7 @@ import com.github.bea4dev.vanilla_source.server.level.entity.LevelEntityTypeRegi
 import com.github.bea4dev.vanilla_source.server.level.generator.GeneratorRegistry
 import com.github.bea4dev.vanilla_source.server.level.registerDimensions
 import com.github.bea4dev.vanilla_source.server.listener.registerBlockListener
+import com.github.bea4dev.vanilla_source.server.listener.registerEntityListener
 import com.github.bea4dev.vanilla_source.server.listener.registerItemListener
 import com.github.bea4dev.vanilla_source.server.player.VanillaSourcePlayerProvider
 import com.github.bea4dev.vanilla_source.server.player.registerPlayerEventListener
@@ -96,6 +97,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         // Register events
         registerItemListener()
         registerBlockListener()
+        registerEntityListener()
 
         /*
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartSneakingEvent::class.java) { event ->

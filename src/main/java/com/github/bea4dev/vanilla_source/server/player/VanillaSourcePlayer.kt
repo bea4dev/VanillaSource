@@ -108,8 +108,8 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
             } else {
                 0
             }
-            val damage = fallDistance.toFloat() - 3.5F - reduce.toFloat()
-            if (damage > 0.0) {
+            val damage = fallDistance.toFloat() - 3.0F - reduce.toFloat()
+            if (damage >= 1.0) {
                 super.damage(DamageType.FALL, damage)
                 super.sendPacketsToViewers(HitAnimationPacket(super.getEntityId(), super.position.yaw))
             }
