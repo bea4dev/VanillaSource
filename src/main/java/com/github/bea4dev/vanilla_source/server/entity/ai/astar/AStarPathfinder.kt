@@ -1,7 +1,5 @@
 package com.github.bea4dev.vanilla_source.server.entity.ai.astar
 
-import com.github.bea4dev.vanilla_source.natives.NativeThreadLocalRegistryManager
-import com.github.bea4dev.vanilla_source.natives.getNativeID
 import com.github.bea4dev.vanilla_source.server.level.util.BlockPosition
 import net.minestom.server.MinecraftServer
 import net.minestom.server.instance.Instance
@@ -30,24 +28,15 @@ class AStarPathfinder(
     //Sorted node
     private val sortNodeSet: MutableSet<NodeData> = HashSet()
 
-    private var levelId = level.getNativeID()
-    private var nativeManager = NativeThreadLocalRegistryManager.getForLevelEntityThread(level)
-    var useNative = true
-
     fun runPathfindingAsync(): CompletableFuture<List<BlockPosition>> {
-        val future = if (useNative) {
-            AsyncPathfinderThread.getThread().runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
-        } else {
-            // Start pathfinding at async
-            val completableFuture = CompletableFuture<List<BlockPosition>>()
-            MinecraftServer.getSchedulerManager().scheduleNextProcess({
-                completableFuture.complete(
-                    runPathFinding()
-                )
-            }, ExecutionType.TICK_START)
-            completableFuture
-        }
-        return future
+        // Start pathfinding at async
+        val completableFuture = CompletableFuture<List<BlockPosition>>()
+        MinecraftServer.getSchedulerManager().scheduleNextProcess({
+            completableFuture.complete(
+                runPathFinding()
+            )
+        }, ExecutionType.TICK_START)
+        return completableFuture
     }
 
     fun runPathFinding(): List<BlockPosition> {
@@ -58,11 +47,6 @@ class AStarPathfinder(
         }
 
         val level = this.level.get() ?: return EMPTY_LIST
-
-        val nativeManager = this.nativeManager
-        if (useNative) {
-            return nativeManager.runPathfinding(levelId, start, goal, descendingHeight, jumpHeight, maxIteration)
-        }
 
         nodeDataMap.clear()
         sortNodeSet.clear()
@@ -189,8 +173,6 @@ class AStarPathfinder(
 
     fun updateLevel(level: Instance) {
         this.level = WeakReference(level)
-        this.levelId = level.getNativeID()
-        this.nativeManager = NativeThreadLocalRegistryManager.getForLevelEntityThread(level)
     }
 
 }

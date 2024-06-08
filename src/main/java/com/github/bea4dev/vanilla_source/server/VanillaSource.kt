@@ -9,12 +9,9 @@ import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.lang.LanguageText
 import com.github.bea4dev.vanilla_source.lang.TranslateRenderer
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
-import com.github.bea4dev.vanilla_source.natives.NativeManager
-import com.github.bea4dev.vanilla_source.natives.registerNativeChunkListener
 import com.github.bea4dev.vanilla_source.plugin.PluginManager
 import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
-import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AsyncPathfinderThread
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
 import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
@@ -58,7 +55,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         )
     )
 
-    val nativeManager = NativeManager()
     val logger = LoggerFactory.getLogger("VanillaSource")!!
     private var defaultLevel: Instance? = null
     private val isRunning = AtomicBoolean(false)
@@ -83,9 +79,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
     private fun registerTask() {
         GeneratorRegistry.init()
-
-        // For native libs
-        registerNativeChunkListener()
 
         // Entity models
         if (serverConfig.settings.enableModelEngine) {
@@ -143,9 +136,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             // Load text
             LanguageText.initialize()
 
-            // Load native libs
-            nativeManager.init()
-
             registerTask()
             registerBenchmarkTask()
 
@@ -169,9 +159,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
                     player.gameMode = gameMode
                 }
             }
-
-            // Start async pathfinder threads
-            AsyncPathfinderThread.initialize(serverConfig.settings.asyncPathfindingThreads)
 
             // Register shutdown task
             MinecraftServer.getSchedulerManager().buildShutdownTask {
@@ -219,7 +206,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
     fun stop() {
         if (isRunning.getAndSet(false)) {
             MinecraftServer.stopCleanly()
-            AsyncPathfinderThread.shutdownAll()
             pluginManager.onDisable()
             console?.stop()
         }
@@ -230,7 +216,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             logger.warn("!!! SERVER IS STOPPED WITH FATAL ERROR !!!")
             error.printStackTrace()
             MinecraftServer.stopCleanly()
-            AsyncPathfinderThread.shutdownAll()
             console?.stop()
         }
     }
