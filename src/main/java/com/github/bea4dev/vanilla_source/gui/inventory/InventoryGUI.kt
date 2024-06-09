@@ -9,6 +9,7 @@ import net.minestom.server.inventory.Inventory
 import net.minestom.server.inventory.InventoryType
 import net.minestom.server.inventory.click.ClickType
 import net.minestom.server.inventory.condition.InventoryConditionResult
+import net.minestom.server.item.ItemComponent
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import java.util.BitSet
@@ -306,7 +307,7 @@ class Button(val itemProvider: ButtonItemProvider, val clickEvent: ButtonClickEv
 class Frame(val buttons: Array<Button?>)
 
 private val NONE_ITEM = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE)
-    .meta { meta -> meta.displayName(Component.text("").color(NamedTextColor.GRAY)) }
+    .set(ItemComponent.ITEM_NAME, Component.text("").color(NamedTextColor.GRAY))
     .build()
 
 val NONE_BUTTON = Button({ _ -> NONE_ITEM }, { _ -> }, false)
@@ -318,7 +319,8 @@ val NEXT_PAGE_BUTTON = Button(
         val lastPage = gui.lastPage()
         if (page < lastPage) {
             ItemStack.builder(Material.ARROW)
-                .displayName(
+                .set(
+                    ItemComponent.ITEM_NAME,
                     Component.translatable("gui.next_page")
                         .decoration(TextDecoration.UNDERLINED, true)
                         .decoration(TextDecoration.ITALIC, false)
@@ -341,12 +343,14 @@ val PREVIOUS_PAGE_BUTTON = Button(
         val page = info.page
         if (page > 1) {
             ItemStack.builder(Material.ARROW)
-                .displayName(Component.translatable("gui.prev_page")
-                    .decoration(TextDecoration.UNDERLINED, true)
-                    .decoration(TextDecoration.ITALIC, false)
-                    .append(Component.text(" [${page - 1} / ${gui.lastPage()}]")
+                .set(
+                    ItemComponent.ITEM_NAME,
+                    Component.translatable("gui.prev_page")
+                        .decoration(TextDecoration.UNDERLINED, true)
                         .decoration(TextDecoration.ITALIC, false)
-                        .color(NamedTextColor.GRAY))
+                        .append(Component.text(" [${page - 1} / ${gui.lastPage()}]")
+                            .decoration(TextDecoration.ITALIC, false)
+                            .color(NamedTextColor.GRAY))
                 )
                 .build()
         } else {
@@ -360,7 +364,8 @@ val PREVIOUS_PAGE_BUTTON = Button(
 val BACK_BUTTON = Button(
     { _ ->
         ItemStack.builder(Material.OAK_DOOR)
-            .displayName(
+            .set(
+                ItemComponent.ITEM_NAME,
                 Component.translatable("gui.back")
                     .decoration(TextDecoration.UNDERLINED, true)
                     .decoration(TextDecoration.ITALIC, false)
@@ -374,7 +379,8 @@ val BACK_BUTTON = Button(
 val CLOSE_BUTTON = Button(
     { _ ->
         ItemStack.builder(Material.BARRIER)
-            .displayName(
+            .set(
+                ItemComponent.ITEM_NAME,
                 Component.translatable("gui.close")
                     .color(NamedTextColor.RED)
                     .decoration(TextDecoration.UNDERLINED, true)

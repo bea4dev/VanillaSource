@@ -6,6 +6,7 @@ import net.minestom.server.entity.Entity
 import net.minestom.server.entity.Player
 import net.minestom.server.instance.block.Block
 import net.minestom.server.instance.block.BlockFace
+import net.minestom.server.item.ItemComponent
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.tag.Tag
@@ -40,24 +41,24 @@ abstract class VanillaSourceItem(
 
         @JvmStatic
         fun getItemId(itemStack: ItemStack): String? {
-            return itemStack.meta().getTag(idTag)
+            return itemStack.getTag(idTag)
         }
     }
 
     fun createItemStack(): ItemStack {
         val base = this.createBaseItemStack()
-        return base.withMeta { builder ->
+        return base.with { builder ->
             val displayName = displayName
             if (displayName != null) {
-                builder.displayName(displayName)
+                builder.set(ItemComponent.ITEM_NAME, displayName)
             }
 
             val lore = lore
             if (lore != null) {
-                builder.lore(lore)
+                builder.set(ItemComponent.LORE, lore)
             }
 
-            builder.customModelData(customModelData)
+            builder.set(ItemComponent.CUSTOM_MODEL_DATA, customModelData)
 
             builder.setTag(idTag, this.id)
         }

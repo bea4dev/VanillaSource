@@ -31,7 +31,7 @@ abstract class WeaponItem(
         player.playSound(this.attackSound)
         val position = player.position.add(0.0, player.eyeHeight, 0.0).add(player.position.direction().mul(1.5))
         val packet = ParticlePacket(
-            this.attackParticle.id(),
+            this.attackParticle,
             false,
             position.x,
             position.y,
@@ -40,8 +40,7 @@ abstract class WeaponItem(
             0.0F,
             0.0F,
             1.0F,
-            0,
-            null
+            0
         )
         player.sendPacketToViewersAndSelf(packet)
     }

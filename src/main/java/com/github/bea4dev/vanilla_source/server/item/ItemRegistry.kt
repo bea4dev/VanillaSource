@@ -17,7 +17,7 @@ class ItemRegistry : FreezableResource() {
 
         @JvmStatic
         fun fromItemStack(itemStack: ItemStack): VanillaSourceItem? {
-            val id = itemStack.meta().getTag(VanillaSourceItem.idTag) ?: return null
+            val id = itemStack.getTag(VanillaSourceItem.idTag) ?: return null
             return INSTANCE[id]
         }
     }

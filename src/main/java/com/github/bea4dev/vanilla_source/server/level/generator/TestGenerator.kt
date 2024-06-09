@@ -4,15 +4,14 @@ import de.articdive.jnoise.generators.noisegen.opensimplex.FastSimplexNoiseGener
 import de.articdive.jnoise.pipeline.JNoise
 import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.MinecraftServer
-import net.minestom.server.event.player.PlayerSpawnEvent
-import net.minestom.server.instance.Weather
 import net.minestom.server.instance.block.Block
 import net.minestom.server.instance.generator.GenerationUnit
 import net.minestom.server.instance.generator.Generator
+import net.minestom.server.registry.DynamicRegistry
 import net.minestom.server.sound.SoundEvent
 import net.minestom.server.utils.NamespaceID
-import net.minestom.server.world.biomes.Biome
-import net.minestom.server.world.biomes.BiomeEffects
+import net.minestom.server.world.biome.Biome
+import net.minestom.server.world.biome.BiomeEffects
 import kotlin.math.floor
 
 @Suppress("UnstableApiUsage")
@@ -25,7 +24,7 @@ class TestGenerator: Generator {
         .build()
 
     private val layers: List<Block>
-    private val biome: Biome
+    private val biomeKey: DynamicRegistry.Key<Biome>
 
     init {
         val layers = mutableListOf<Block>()
@@ -35,8 +34,7 @@ class TestGenerator: Generator {
         this.layers = layers
 
         val color = NamedTextColor.WHITE.value()
-        biome = Biome.builder()
-            .name(NamespaceID.from("custom:test"))
+        val biome = Biome.builder(NamespaceID.from("custom:test"))
             .effects(BiomeEffects(
                 color,
                 color,
@@ -49,12 +47,12 @@ class TestGenerator: Generator {
                 SoundEvent.MUSIC_NETHER_NETHER_WASTES.namespace(),
                 null,
                 null,
-                BiomeEffects.Music(SoundEvent.MUSIC_NETHER_BASALT_DELTAS.namespace(), 12000, 24000, true)
+                BiomeEffects.Music(SoundEvent.MUSIC_NETHER_NETHER_WASTES.namespace(), 0, 1000, true)
             ))
             .precipitation(Biome.Precipitation.SNOW)
             .temperature(0.0F)
             .build()
-        MinecraftServer.getBiomeManager().addBiome(biome)
+        biomeKey = MinecraftServer.getBiomeRegistry().register(biome)
     }
 
     override fun generate(unit: GenerationUnit) {
@@ -78,6 +76,6 @@ class TestGenerator: Generator {
             }
         }
 
-        unit.modifier().fillBiome(biome)
+        unit.modifier().fillBiome(biomeKey)
     }
 }

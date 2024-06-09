@@ -11,9 +11,9 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import net.minestom.server.MinecraftServer
 import net.minestom.server.event.instance.InstanceChunkUnloadEvent
-import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.Instance
 import net.minestom.server.instance.LightingChunk
+import net.minestom.server.instance.anvil.AnvilLoader
 import net.minestom.server.utils.NamespaceID
 import net.minestom.server.utils.chunk.ChunkSupplier
 import org.yaml.snakeyaml.Yaml
@@ -75,7 +75,9 @@ class Level {
         private fun load(levelConfig: LevelConfig): Result<Instance, String> {
             val instanceManager = MinecraftServer.getInstanceManager()
             val dimensionTypeName = levelConfig.dimensionType
-            val dimension = MinecraftServer.getDimensionTypeManager().getDimension(NamespaceID.from(dimensionTypeName))
+            val dimensionRegistry = MinecraftServer.getDimensionTypeRegistry()
+            val dimensionId = dimensionRegistry.getId(NamespaceID.from(dimensionTypeName))
+            val dimension = dimensionRegistry.getKey(dimensionId)
                 ?: return Err("[${levelConfig.name}] DimensionType '${dimensionTypeName}' is not found!")
 
             val level = instanceManager.createInstanceContainer(dimension)

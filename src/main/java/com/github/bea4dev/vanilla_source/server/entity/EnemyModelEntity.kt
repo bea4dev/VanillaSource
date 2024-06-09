@@ -16,12 +16,14 @@ import net.minestom.server.entity.Entity
 import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.LivingEntity
 import net.minestom.server.entity.Player
+import net.minestom.server.entity.damage.Damage
 import net.minestom.server.entity.damage.DamageType
 import net.minestom.server.entity.damage.EntityDamage
 import net.minestom.server.network.packet.server.SendablePacket
 import net.minestom.server.network.packet.server.play.HitAnimationPacket
 import net.minestom.server.network.packet.server.play.ParticlePacket
 import net.minestom.server.particle.Particle
+import net.minestom.server.registry.DynamicRegistry
 import net.minestom.server.sound.SoundEvent
 import net.minestom.server.thread.TickThread
 import net.minestom.server.timer.TaskSchedule
@@ -125,7 +127,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
             val y = Random.nextDouble(size) - (size / 2.0)
             val z = Random.nextDouble(size) - (size / 2.0)
             val particle = ParticlePacket(
-                Particle.CRIT.id(),
+                Particle.CRIT,
                 false,
                 position.x,
                 position.y,
@@ -134,8 +136,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
                 y.toFloat(),
                 z.toFloat(),
                 1.0F,
-                0,
-                null
+                0
             )
             packets += particle
         }
@@ -389,20 +390,20 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
         }
     }
 
-    override fun damage(type: DamageType, value: Float): Boolean {
+    override fun damage(damage: Damage): Boolean {
         if (isPlayingDieAnimation) {
             return false
         }
         colorize(255, 0, 0)
         super.scheduler().scheduleTask({ colorizeDefault() }, TaskSchedule.tick(2), TaskSchedule.stop())
-        if (super.getHealth() <= value) {
+        if (super.getHealth() <= damage.amount) {
             attackingStatus = DEAD
             playAnimation("die")
             val position = super.position
             super.sendPacketToViewers(AdventurePacketConvertor.createSoundPacket(this.deathSound, position.x, position.y, position.z))
 
-            val velocity = if (type is EntityDamage) {
-                val entity = type.source
+            val velocity = if (damage is EntityDamage) {
+                val entity = damage.source
                 entity.position.direction()
             } else {
                 val direction = super.position.direction()
@@ -413,7 +414,7 @@ open class EnemyModelEntity(entityType: EntityType, model: Model)
             super.scheduler().scheduleTask({ kill() }, TaskSchedule.tick(30), TaskSchedule.stop())
             return true
         }
-        super.setHealth(super.getHealth() - value)
+        super.setHealth(super.getHealth() - damage.amount)
         super.sendPacketToViewers(AdventurePacketConvertor.createSoundPacket(this.damageSound, position.x, position.y, position.z))
         return true
     }

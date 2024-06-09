@@ -9,6 +9,7 @@ fun registerEntityListener() {
     registerEntityVoidDamageListener()
 }
 
+@Suppress("UnstableApiUsage")
 private fun registerEntityVoidDamageListener() {
     MinecraftServer.getGlobalEventHandler().addListener(EntityTickEvent::class.java) { event ->
         val entity = event.entity
@@ -17,7 +18,7 @@ private fun registerEntityVoidDamageListener() {
         }
 
         val level = entity.instance ?: return@addListener
-        if (entity.position.y < level.dimensionType.minY) {
+        if (entity.position.y < level.cachedDimensionType.minY()) {
             if (entity is LivingEntity && !entity.isDead) {
                 entity.damage(DamageType.FALL, 20.0F)
             }

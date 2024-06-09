@@ -6,14 +6,12 @@ import com.github.bea4dev.vanilla_source.server.entity.isOnGroundStrict
 import com.github.bea4dev.vanilla_source.server.entity.move
 import com.github.bea4dev.vanilla_source.server.level.util.BlockPosition
 import com.github.bea4dev.vanilla_source.util.ContanUtil
-import net.kyori.adventure.text.Component
-import net.minestom.server.adventure.audience.Audiences
-import net.minestom.server.attribute.Attribute
 import net.minestom.server.collision.CollisionUtils
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.LivingEntity
+import net.minestom.server.entity.attribute.Attribute
 import net.minestom.server.instance.Instance
 import org.contan_lang.runtime.JavaContanFuture
 import org.contan_lang.variables.ContanObject
@@ -71,7 +69,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
         }
 
         if (this.isLiving) {
-            this.speed = (this.entity as LivingEntity).getAttribute(Attribute.MOVEMENT_SPEED).baseValue
+            this.speed = (this.entity as LivingEntity).getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).baseValue.toFloat()
         }
 
         if (isJumping) {
