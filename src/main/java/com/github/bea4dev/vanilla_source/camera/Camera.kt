@@ -22,7 +22,7 @@ class Camera(position: Pos): Entity(EntityType.BOAT) {
     @Synchronized
     fun addPLayer(player: VanillaSourcePlayer) {
         player.gameMode = GameMode.SPECTATOR
-        val spawnPacket = EntityType.BOAT.registry().spawnType.getSpawnPacket(this)
+        val spawnPacket = EntityType.BOAT.registry().spawnType().getSpawnPacket(this)
         val cameraPacket = CameraPacket(this)
         player.sendPackets(spawnPacket, cameraPacket)
         players.add(player)

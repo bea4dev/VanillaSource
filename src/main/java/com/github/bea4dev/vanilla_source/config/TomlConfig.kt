@@ -8,7 +8,6 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import java.io.File
 import java.nio.charset.StandardCharsets
-import kotlin.reflect.full.companionObjectInstance
 
 interface DefaultTomlConfig: TomlConfig {
     fun default(): TomlConfig

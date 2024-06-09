@@ -28,7 +28,7 @@ dependencies {
     testImplementation(kotlin("test"))
 
     // Minestom
-    implementation("com.github.bea4dev:Minestom:1b648c5f87")
+    implementation("com.github.bea4dev:Minestom:972d851dd6")
 
     // Log
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
@@ -71,6 +71,8 @@ dependencies {
 
     // Noise
     implementation("de.articdive:jnoise-pipeline:4.1.0")
+
+    implementation(kotlin("reflect"))
 
 }
 
