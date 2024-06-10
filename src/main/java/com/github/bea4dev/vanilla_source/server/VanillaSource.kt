@@ -14,7 +14,6 @@ import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
-import com.github.bea4dev.vanilla_source.server.level.LevelChunkThreadProvider
 import com.github.bea4dev.vanilla_source.server.level.block.DiggingHandler
 import com.github.bea4dev.vanilla_source.server.level.block.GLOBAL_DIGGING_HANDLER
 import com.github.bea4dev.vanilla_source.server.level.entity.DebugLevelEntityType
@@ -36,6 +35,7 @@ import net.minestom.server.entity.Player
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.extras.MojangAuth
+import net.minestom.server.instance.ChunkThreadProvider
 import net.minestom.server.instance.Instance
 import net.minestom.server.instance.block.Block
 import net.minestom.server.thread.ThreadDispatcher
@@ -48,9 +48,9 @@ import java.util.function.BiFunction
 
 @Suppress("UnstableApiUsage")
 class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
-    private val minecraftServer: MinecraftServer = MinecraftServer.initWithCustomDispatcher(
+    private val minecraftServer: MinecraftServer = MinecraftServer.initWithDispatcher(
         ThreadDispatcher.of(
-            LevelChunkThreadProvider(serverConfig.settings.maxWorldTickThreads),
+            ChunkThreadProvider(),
             serverConfig.settings.maxWorldTickThreads
         )
     )

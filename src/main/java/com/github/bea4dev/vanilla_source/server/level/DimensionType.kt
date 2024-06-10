@@ -17,7 +17,7 @@ private val NETHER_EFFECT_OVERWORLD = DimensionType.builder(NamespaceID.from("va
     .fixedTime(null)
     .logicalHeight(384)
     .effects("the_nether")
-    .infiniburn("minecraft:infiniburn_overworld")
+    .infiniburn("#minecraft:infiniburn_overworld")
     .build()
 
 fun registerDimensions() {
