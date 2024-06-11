@@ -8,6 +8,7 @@ import net.minestom.server.coordinate.Pos
 import net.minestom.server.effects.Effects
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
+import net.minestom.server.entity.attribute.Attribute
 import net.minestom.server.entity.damage.DamageType
 import net.minestom.server.instance.block.BlockFace
 import net.minestom.server.network.packet.server.SendablePacket
@@ -209,7 +210,7 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
         diggingTick = 0
         diggingTime = time
         diggingBlock = blockPosition
-        super.addEffect(Potion(PotionEffect.MINING_FATIGUE, -1, -1))
+        super.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED).baseValue = 0.0
     }
 
     @Synchronized
@@ -219,7 +220,7 @@ open class VanillaSourcePlayer(uuid: UUID, username: String, playerConnection: P
             super.sendPacketToViewersAndSelf(BlockBreakAnimationPacket(-super.getEntityId(), position, -1))
         }
         diggingBlock = null
-        super.removeEffect(PotionEffect.MINING_FATIGUE)
+        super.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED).baseValue = 1.0
     }
 
     @Synchronized
