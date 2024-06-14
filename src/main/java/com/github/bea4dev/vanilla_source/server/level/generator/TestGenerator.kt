@@ -34,7 +34,7 @@ class TestGenerator: Generator {
         this.layers = layers
 
         val color = NamedTextColor.WHITE.value()
-        val biome = Biome.builder(NamespaceID.from("custom:test"))
+        val biome = Biome.builder()
             .effects(BiomeEffects(
                 color,
                 color,
@@ -52,7 +52,7 @@ class TestGenerator: Generator {
             .precipitation(Biome.Precipitation.SNOW)
             .temperature(0.0F)
             .build()
-        biomeKey = MinecraftServer.getBiomeRegistry().register(biome)
+        biomeKey = MinecraftServer.getBiomeRegistry().register("custom:test", biome)
     }
 
     override fun generate(unit: GenerationUnit) {

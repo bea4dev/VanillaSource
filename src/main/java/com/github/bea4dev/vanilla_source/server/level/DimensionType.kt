@@ -5,7 +5,7 @@ import net.minestom.server.utils.NamespaceID
 import net.minestom.server.world.DimensionType
 
 
-private val NETHER_EFFECT_OVERWORLD = DimensionType.builder(NamespaceID.from("vanilla_source:nether_effect_overworld"))
+private val NETHER_EFFECT_OVERWORLD = DimensionType.builder()
     .ultrawarm(false)
     .natural(true)
     .piglinSafe(false)
@@ -21,5 +21,5 @@ private val NETHER_EFFECT_OVERWORLD = DimensionType.builder(NamespaceID.from("va
     .build()
 
 fun registerDimensions() {
-    MinecraftServer.getDimensionTypeRegistry().register(NETHER_EFFECT_OVERWORLD)
+    MinecraftServer.getDimensionTypeRegistry().register("vanilla_source:nether_effect_overworld", NETHER_EFFECT_OVERWORLD)
 }
