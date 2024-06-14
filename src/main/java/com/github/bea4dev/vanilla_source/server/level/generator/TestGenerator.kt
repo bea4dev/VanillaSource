@@ -9,7 +9,6 @@ import net.minestom.server.instance.generator.GenerationUnit
 import net.minestom.server.instance.generator.Generator
 import net.minestom.server.registry.DynamicRegistry
 import net.minestom.server.sound.SoundEvent
-import net.minestom.server.utils.NamespaceID
 import net.minestom.server.world.biome.Biome
 import net.minestom.server.world.biome.BiomeEffects
 import kotlin.math.floor

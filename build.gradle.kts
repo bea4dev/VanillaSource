@@ -74,6 +74,9 @@ dependencies {
 
     implementation(kotlin("reflect"))
 
+    implementation("com.github.AtlasEngineCa:WorldSeedEntityEngine:a90016c386")
+    implementation("commons-io:commons-io:2.11.0")
+
 }
 
 tasks.test {
