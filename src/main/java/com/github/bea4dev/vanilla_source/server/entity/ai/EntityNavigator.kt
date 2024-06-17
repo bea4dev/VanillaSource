@@ -1,6 +1,5 @@
 package com.github.bea4dev.vanilla_source.server.entity.ai
 
-import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
 import com.github.bea4dev.vanilla_source.server.entity.ai.astar.AStarPathfinder
 import com.github.bea4dev.vanilla_source.server.entity.isOnGroundStrict
 import com.github.bea4dev.vanilla_source.server.entity.move
@@ -197,11 +196,7 @@ class EntityNavigator(val entity: Entity, var speed: Float, val jumpHeight: Doub
 
     private fun move(velocity: Vec, next: BlockPosition) {
         val pos = entity.position.withDirection(velocity)
-        if (entity is EnemyModelEntity) {
-            entity.setViewDelayed(pos.yaw, pos.pitch)
-        } else {
-            entity.setView(pos.yaw, pos.pitch)
-        }
+        entity.setView(pos.yaw, pos.pitch)
 
         val result = entity.move(velocity, smoothJumpHeight)
         val failedAutoJump = (result.collisionX || result.collisionZ) && result.newVelocity.y <= 0.0

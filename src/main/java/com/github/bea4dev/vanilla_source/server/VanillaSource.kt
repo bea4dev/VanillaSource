@@ -1,15 +1,13 @@
 package com.github.bea4dev.vanilla_source.server
 
 import com.github.bea4dev.vanilla_source.Console
-import com.github.bea4dev.vanilla_source.Resources
 import com.github.bea4dev.vanilla_source.commands.Commands
-import com.github.bea4dev.vanilla_source.config.TomlConfig
-import com.github.bea4dev.vanilla_source.config.resource.EntityModelConfig
 import com.github.bea4dev.vanilla_source.config.server.ServerConfig
 import com.github.bea4dev.vanilla_source.lang.LanguageText
 import com.github.bea4dev.vanilla_source.lang.TranslateRenderer
 import com.github.bea4dev.vanilla_source.logger.STDOutLogger
 import com.github.bea4dev.vanilla_source.plugin.PluginManager
+import com.github.bea4dev.vanilla_source.resource.model.EntityModelResources
 import com.github.bea4dev.vanilla_source.server.debug.registerBenchmarkTask
 import com.github.bea4dev.vanilla_source.server.item.ItemRegistry
 import com.github.bea4dev.vanilla_source.server.level.Level
@@ -26,31 +24,18 @@ import com.github.michaelbull.result.unwrap
 import net.kyori.adventure.text.Component
 import net.minestom.server.MinecraftServer
 import net.minestom.server.adventure.MinestomAdventure
-import net.minestom.server.coordinate.Pos
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.Player
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
-import net.minestom.server.event.player.PlayerHandAnimationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.extras.MojangAuth
 import net.minestom.server.instance.ChunkThreadProvider
 import net.minestom.server.instance.Instance
-import net.minestom.server.item.Material
 import net.minestom.server.thread.ThreadDispatcher
-import net.worldseed.multipart.GenericModelImpl
-import net.worldseed.multipart.ModelEngine
-import net.worldseed.multipart.animations.AnimationHandlerImpl
-import net.worldseed.resourcepack.PackBuilder
-import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStreamReader
-import java.nio.charset.Charset
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.BiFunction
-import kotlin.io.path.Path
 
 
 @Suppress("UnstableApiUsage")
@@ -89,9 +74,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
 
         // Entity models
         if (serverConfig.settings.enableModelEngine) {
-            Resources.saveResource("entity_model.toml", false)
-            val entityModelConfig = TomlConfig.loadOrDefault<EntityModelConfig>(File("entity_model.toml")).unwrap()
-            //EntityModelResource.createGlobalResource(entityModelConfig)
+            EntityModelResources.loadModels()
         }
 
         // Register events
@@ -123,42 +106,6 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
         registerEventListeners()
 
         registerDimensions()
-
-        ModelEngine.setModelMaterial(Material.MAGMA_CREAM)
-
-        File("pack/resource-pack").delete()
-        FileUtils.copyDirectory(File("pack/resource-pack-template"), File("pack/resource-pack"))
-
-        val config = PackBuilder.Generate(Path("pack/bbmodels"), Path("pack/resource-pack"), Path("pack/models"))
-        FileUtils.writeStringToFile(File("pack/model_mappings.json"), config.modelMappings(), Charset.defaultCharset())
-
-        val mappingsData = InputStreamReader(FileInputStream(File("pack/model_mappings.json")))
-        ModelEngine.loadMappings(mappingsData, Path("pack/models"))
-
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerHandAnimationEvent::class.java) { event ->
-            val player = event.player
-
-            val minimal = Minimal()
-            minimal.init(player.instance, player.position)
-            minimal.setState("normal")
-
-            minimal.addViewer(player)
-
-            val animationHandler = AnimationHandlerImpl(minimal)
-            animationHandler.playRepeat("attack")
-
-            player.sendMessage("OK!")
-        }
-    }
-
-    class Minimal : GenericModelImpl() {
-        override fun getId(): String {
-            return "normal_zombie_be.bbmodel"
-        }
-
-        override fun init(instance: Instance?, position: Pos) {
-            super.init(instance, position, 2.5f)
-        }
     }
 
     private fun registerEventListeners() {

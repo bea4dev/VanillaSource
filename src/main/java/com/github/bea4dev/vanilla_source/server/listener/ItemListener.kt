@@ -1,6 +1,5 @@
 package com.github.bea4dev.vanilla_source.server.listener
 
-import com.github.bea4dev.vanilla_source.server.entity.EnemyModelEntity
 import com.github.bea4dev.vanilla_source.server.item.VanillaSourceItem
 import com.github.bea4dev.vanilla_source.server.item.getItem
 import com.github.bea4dev.vanilla_source.server.item.getItemId
@@ -70,9 +69,6 @@ private fun handlePlayerAttack(player: Player, target: Entity) {
         return
     }
 
-    if (target is EnemyModelEntity) {
-        target.onAttacked(player, item)
-    }
     item.onEntityAttack(player, target, itemStack)
 }
 

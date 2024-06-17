@@ -1,9 +1,7 @@
 package com.github.bea4dev.vanilla_source.commands
 
-import com.github.bea4dev.vanilla_source.resource.model.EntityModelResource
-import com.github.bea4dev.vanilla_source.server.coroutine.launch
-import com.github.bea4dev.vanilla_source.server.coroutine.sync
-import kotlinx.coroutines.delay
+import com.github.bea4dev.vanilla_source.resource.model.EntityModelResources
+import com.github.bea4dev.vanilla_source.server.entity.ModelViewer
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.MinecraftServer
@@ -12,7 +10,8 @@ import net.minestom.server.command.builder.arguments.ArgumentType
 import net.minestom.server.command.builder.suggestion.SuggestionEntry
 import net.minestom.server.entity.Player
 import net.minestom.server.timer.TaskSchedule
-import team.unnamed.hephaestus.animation.Animation
+import net.worldseed.multipart.ModelLoader
+import net.worldseed.multipart.animations.AnimationHandlerImpl
 import java.util.function.Function
 
 class ModelCommand : Command("model") {
@@ -24,23 +23,29 @@ class ModelCommand : Command("model") {
                 return@setSuggestionCallback
             }
 
-            for (model in EntityModelResource.getInstance().getModels()) {
-                suggestion.addEntry(SuggestionEntry(model.name()))
+            for (model in EntityModelResources.models()) {
+                suggestion.addEntry(SuggestionEntry(model))
             }
         }
         modelNameArg.defaultValue = Function { _ -> "" }
 
+        val scaleArg = ArgumentType.Float("scale")
+        scaleArg.defaultValue = Function { _ -> 1.0F }
+
         val animationNameArg = ArgumentType.String("animation-name")
-        animationNameArg.setSuggestionCallback { sender, context, suggestion ->
+        animationNameArg.setSuggestionCallback { sender, _, suggestion ->
             if (sender !is Player) {
                 return@setSuggestionCallback
             }
 
-            val resource = EntityModelResource.getInstance()
-            val model = resource[context[modelNameArg.id]] ?: return@setSuggestionCallback
+            if (modelNameArg.id !in EntityModelResources.models()) {
+                return@setSuggestionCallback
+            }
 
-            for (animation in model.animations()) {
-                suggestion.addEntry(SuggestionEntry(animation.key))
+            val animations = ModelLoader.loadAnimations("${modelNameArg.id}.bbmodel").get("animations").asJsonObject.keySet()
+
+            for (animation in animations) {
+                suggestion.addEntry(SuggestionEntry(animation))
             }
         }
         animationNameArg.defaultValue = Function { _ -> "" }
@@ -52,32 +57,30 @@ class ModelCommand : Command("model") {
             }
 
             val modelName = context[modelNameArg]
+            val scale = context[scaleArg]
             val animationName = context[animationNameArg]
-            val resource = EntityModelResource.getInstance()
-            val model = resource[modelName]
 
-            if (model == null) {
+            if (modelName !in EntityModelResources.models()) {
                 sender.sendMessage(Component.text("Model '${modelName}' is not found!").color(NamedTextColor.RED))
                 return@addSyntax
             }
 
-            val entity = resource.createModelEntityTracked(modelName, sender.instance, sender.position)
-            if (animationName != "") {
-                val animation = model.animations()[animationName] ?: return@addSyntax
+            val entity = ModelViewer("$modelName.bbmodel")
+            entity.init(sender.instance, sender.position, scale)
+            entity.addViewer(sender)
 
-                when (animation.loopMode()) {
-                    Animation.LoopMode.LOOP -> entity.playAnimation(animationName)
-                    else -> {
-                        MinecraftServer.getSchedulerManager().scheduleTask({ entity.playAnimation(animationName) },
-                            TaskSchedule.tick(1), TaskSchedule.tick(100))
-                    }
-                }
+            val animationHandler = AnimationHandlerImpl(entity)
+            if (animationName != "") {
+                animationHandler.playRepeat(animationName)
             }
 
-            MinecraftServer.getSchedulerManager().scheduleTask({ entity.kill() }, TaskSchedule.tick(1200), TaskSchedule.stop())
+            MinecraftServer.getSchedulerManager().scheduleTask({
+                entity.destroy()
+                animationHandler.destroy()
+            }, TaskSchedule.tick(1200), TaskSchedule.stop())
 
             sender.sendMessage(Component.text("Spawn!").color(NamedTextColor.GREEN))
-        }, modelNameArg, animationNameArg)
+        }, modelNameArg, scaleArg, animationNameArg)
     }
 
 }
