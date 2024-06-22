@@ -29,8 +29,8 @@ import net.minestom.server.entity.Player
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
 import net.minestom.server.extras.MojangAuth
-import net.minestom.server.instance.ChunkThreadProvider
 import net.minestom.server.instance.Instance
+import net.minestom.server.instance.InstanceThreadProvider
 import net.minestom.server.thread.ThreadDispatcher
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -42,7 +42,7 @@ import java.util.function.BiFunction
 class VanillaSource(val serverConfig: ServerConfig, private val console: Console?) {
     private val minecraftServer: MinecraftServer = MinecraftServer.initWithDispatcher(
         ThreadDispatcher.of(
-            ChunkThreadProvider(),
+            InstanceThreadProvider(),
             serverConfig.settings.maxWorldTickThreads
         )
     )
