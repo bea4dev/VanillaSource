@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.BiFunction
+import kotlin.system.exitProcess
 
 
 @Suppress("UnstableApiUsage")
@@ -198,6 +199,7 @@ class VanillaSource(val serverConfig: ServerConfig, private val console: Console
             MinecraftServer.stopCleanly()
             pluginManager.onDisable()
             console?.stop()
+            exitProcess(0)
         }
     }
 
